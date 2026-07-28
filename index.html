@@ -2743,9 +2743,13 @@
   // ---------------------------------------------------------------------
   async function refreshAccount(id) {
     const acc = accounts.find(a => a.id === id);
-    if (!acc || acc._refreshing) return;
+    if (!acc) return;
+    // Per-account guard only: refreshing the same card twice at once would
+    // race two writes into one record. Different cards are free to run
+    // concurrently, and now actually can — see structureSignature.
+    if (acc._refreshing) return;
     acc._refreshing = true;
-    render();
+    tickUi();
 
     try {
       // The entire dispatch. It cannot disagree with the "● Live" badge,
@@ -2841,7 +2845,10 @@
       const target = accounts.find(a => a.id === id);
       if (target) target._refreshing = false;
       persist();
-      render();
+      // tickUi re-renders only if something structural actually changed
+      // (a series appeared, a control button swapped). Otherwise it updates
+      // text and meters in place, leaving other cards' buttons alive.
+      tickUi();
     }
   }
 
@@ -3116,9 +3123,7 @@
     // a hand-maintained card is editing it.
     const actionBtn = d.real
       ? `<button type="button" class="refresh-btn flex-1 text-xs font-medium px-3 py-2 rounded-lg flex items-center justify-center gap-1.5" data-id="${escapeHtml(acc.id)}"
-          style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);" ${acc._refreshing ? "disabled" : ""}>
-          ${acc._refreshing ? '<svg class="w-3.5 h-3.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/></svg> Refreshing' : "Refresh"}
-        </button>`
+          style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);" ${acc._refreshing ? "disabled" : ""}>${refreshBtnInner(acc)}</button>`
       : `<button type="button" class="edit-btn flex-1 text-xs font-medium px-3 py-2 rounded-lg" data-id="${escapeHtml(acc.id)}"
           style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Update</button>`;
 
@@ -3179,6 +3184,14 @@
   // Secondary meters. Deliberately lighter than the hero — thinner bar,
   // smaller type — so the card still has one obvious headline number and
   // the rest read as supporting detail rather than five competing heroes.
+  // Shared by render() and the in-place path so the two can never disagree
+  // about what a busy Refresh button looks like.
+  function refreshBtnInner(acc) {
+    return acc._refreshing
+      ? '<svg class="w-3.5 h-3.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/></svg> Refreshing'
+      : "Refresh";
+  }
+
   function secondarySeriesHtml(acc) {
     const extra = acc.series || [];
     if (!extra.length) return "";
@@ -3330,6 +3343,15 @@
       }
     }
 
+    // Busy state, updated in place rather than by rebuilding the grid.
+    const refreshBtn = cardEl.querySelector(".refresh-btn");
+    if (refreshBtn) {
+      const busy = !!acc._refreshing;
+      if (refreshBtn.disabled !== busy) refreshBtn.disabled = busy;
+      const wanted = refreshBtnInner(acc);
+      if (refreshBtn.innerHTML.trim() !== wanted.trim()) refreshBtn.innerHTML = wanted;
+    }
+
     const errSlot = cardEl.querySelector("[data-error-slot]");
     if (errSlot) {
       const wanted = d.error ? errorBannerHtml(acc.id, d.error) : "";
@@ -3363,8 +3385,15 @@
     // button markup, which the in-place text update path can't do.
     // The meter count is structural too: gaining or losing a series changes
     // how many rows exist, which the in-place path can't create.
+    //
+    // `_refreshing` is deliberately NOT here. It used to be, which meant
+    // starting a refresh rebuilt the whole grid just to draw a spinner —
+    // destroying every button in it. A second click then landed on a
+    // detached element and the delegated listener never saw it, so parallel
+    // refreshes silently vanished. The busy state is a two-property change
+    // (disabled + label) and belongs in the in-place path.
     return list.map(a =>
-      `${a.id}:${a._refreshing ? 1 : 0}:${a._acting ? 1 : 0}:${isRealType(a) ? 1 : 0}:${a.controlState || ""}:${(a.series || []).length}`
+      `${a.id}:${a._acting ? 1 : 0}:${isRealType(a) ? 1 : 0}:${a.controlState || ""}:${(a.series || []).length}`
     ).join("|");
   }
 
@@ -4060,12 +4089,18 @@
         return setBulkStatus("None of the selected cards are live — manual cards have nothing to fetch.", true);
       }
       setBulkStatus(`Refreshing ${live.length}…`);
-      // Sequential on purpose: refreshAccount guards against concurrent runs
-      // per account, and firing everything at once would hammer the APIs.
-      let ok = 0, failed = 0;
-      for (const acc of live) {
-        try { await refreshAccount(acc.id); ok++; } catch (e) { failed++; }
-      }
+      // Bounded pool rather than a serial loop: the grid no longer rebuilds
+      // mid-refresh, so cards genuinely can run in parallel. Capped so a
+      // 30-card selection doesn't open 30 sockets at once.
+      let ok = 0, failed = 0, next = 0;
+      const CONCURRENCY = 4;
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, live.length) }, async () => {
+        while (next < live.length) {
+          const acc = live[next++];
+          try { await refreshAccount(acc.id); ok++; } catch (e) { failed++; }
+          setBulkStatus(`Refreshing ${ok + failed}/${live.length}…`);
+        }
+      }));
       setBulkStatus(
         `Refreshed ${ok}${failed ? `, ${failed} failed` : ""}` +
         `${skipped ? `, ${skipped} manual skipped` : ""}.`, failed > 0);
