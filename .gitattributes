@@ -1,0 +1,16 @@
+# Normalise line endings so the repo is byte-identical on every machine.
+#
+# Without this, cloning on Windows rewrites every file to CRLF while the
+# same clone on Linux/macOS gets LF — which produces phantom whole-file
+# diffs and noisy "LF will be replaced by CRLF" warnings on every commit.
+#
+# LF everywhere is the right default here: the backend runs in a Linux
+# container, and every modern Windows editor handles LF without complaint.
+* text=auto eol=lf
+
+# Never touch these if any get added later.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
