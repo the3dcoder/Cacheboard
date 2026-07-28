@@ -772,6 +772,15 @@ async function readClaudePlanUsage(account = "") {
         try {
           token = findAccessToken(JSON.parse(await fsp.readFile(file, "utf8")));
         } catch (e) {
+          // A configured profile with no credentials file just means nobody
+          // has signed that account in yet — say so, rather than surfacing a
+          // raw ENOENT that reads like a broken mount.
+          if (e && e.code === "ENOENT") {
+            throw new Error(
+              `The "${named}" account isn't signed in yet. ` +
+              `Run Sign-in-${named}.cmd (or: CLAUDE_CONFIG_DIR=<profile folder> claude auth login), then Refresh.`
+            );
+          }
           throw new Error(`Could not read the credentials file for "${named}" (${file}): ${e.message}`);
         }
         if (!token) {

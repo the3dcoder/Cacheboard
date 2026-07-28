@@ -37,6 +37,9 @@ services:
       # the token is never logged, cached or sent to the browser.
       # Comment this out to disable the plan-limit card entirely.
       - ${CLAUDE_CREDENTIALS_HOST_FILE:-./.no-creds}:/creds/.credentials.json:ro
+      # Claude profile credentials, one folder per subscription. READ-ONLY:
+      # the server reads one session token per account and returns integers.
+      - ${CLAUDE_PROFILES_HOST_DIR:-./.no-profiles}:/profiles:ro
       # Rotated OAuth refresh tokens survive restarts here.
       - cacheboard-state:/data
 
