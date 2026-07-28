@@ -816,6 +816,11 @@ async function readClaudePlanUsage(account = "") {
   const series = [];
   for (const [key, val] of Object.entries(raw)) {
     if (!val || typeof val !== "object") continue;
+    // extra_usage carries a `utilization` too but is NOT a limit window — it
+    // describes paid overage credits. Harvesting it by shape alone labelled
+    // it "Weekly · extra usage" and drew it as a third cap, which is wrong.
+    // It's reported separately under `extra`.
+    if (key === "extra_usage") continue;
     const util = Number(val.utilization);
     if (!Number.isFinite(util)) continue;
     series.push({
