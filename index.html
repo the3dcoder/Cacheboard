@@ -245,6 +245,15 @@
   .max-w-md { max-width: 28rem; }
   .z-50 { z-index: 50; }
 
+  /* Secondary meters: visibly subordinate to the hero so a multi-meter card
+     still has one headline number rather than five competing ones. */
+  .series-meter { height: 0.375rem; border-radius: 9999px; }
+  .series-row + .series-row { border-top: 1px solid var(--border); padding-top: 0.5rem; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .items-baseline { align-items: baseline; }
+  .pt-1 { padding-top: 0.25rem; }
+  .mt-0\.5 { margin-top: 0.125rem; }
+
   .card-selected { outline: 2px solid var(--accent); outline-offset: -1px; }
   .bulk-check { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); cursor: pointer; }
   .w-full { width: 100%; }
@@ -934,6 +943,11 @@
       hue: "#d97757",
       accountTypes: [
         {
+          value: "plan", label: "Plan limits (session + weekly, all windows)", fetch: fetchClaudePlanUsage,
+          direction: "usage",
+          help: "One card, one meter per limit window — session, weekly all-models, and each per-model weekly cap — mirroring Claude Code's /usage. Needs the plan-usage seam filled in on the backend (server/README → \"Plan usage seam\"); until then it reports that plainly instead of showing a blank card."
+        },
+        {
           value: "usage", label: "Local usage (tokens, cost, per model)", fetch: fetchClaudeCodeUsage,
           fields: [
             { key: "ccMetric", label: "Metric", type: "select", options: [
@@ -1165,6 +1179,13 @@
     ["Front Door",                     "homeassistant", "status",         100,     0,      "",                      NEVER, NEVER, { entityId: "binary_sensor.front_door" }],
     ["Living Room Thermostat",         "homeassistant", "climate",        100,     0,      "",                      NEVER, NEVER, { entityId: "climate.living_room", climateStep: "1" }],
     ["Pi-hole — DNS Queries Today",    "homelab",       "json-metric",    100000,  42000,  "queries",               NEVER, NEVER, { homelabPath: "dns_queries_today" }],
+    // Multi-meter example: one card, one meter per limit window, each with
+    // its own reset clock — the session window resets hours before the
+    // weekly ones do.
+    ["Claude plan limits",             "claudecode",    "plan",           100,     9,      "%",                     4.7,  5, null,
+      [{ key: "seven_day",       label: "Weekly · all models", used: 12, resetInHours: 55 },
+       { key: "seven_day_fable", label: "Weekly · Fable",      used: 4,  resetInHours: 55 }],
+      "Current session"],
     // Cache reads dwarf everything else (hundreds of millions a day is
     // normal), so an "all tokens" target has to be sized for that or the
     // card reads Exhausted from the first refresh.
@@ -1184,11 +1205,19 @@
   function seedMockData() {
     const now = Date.now();
     const HOUR = 3600 * 1000;
-    return SEED_ROWS.map(([name, platform, accountType, totalLimit, used, unit, resetInHours, cycleHours, creds]) => ({
+    return SEED_ROWS.map(([name, platform, accountType, totalLimit, used, unit, resetInHours, cycleHours, creds, series, primaryLabel]) => ({
       id: uid(), name, platform, accountType, totalLimit, used, unit,
       resetTime: new Date(now + resetInHours * HOUR).toISOString(),
       resetIntervalMs: cycleHours * HOUR,
       creds: creds || {},
+      // Extra meters, each with its own clock. Offsets are hours from now.
+      series: (series || []).map(s => ({
+        key: s.key, label: s.label, used: s.used, totalLimit: s.totalLimit || 100,
+        unit: s.unit || unit,
+        resetTime: new Date(now + (s.resetInHours || 0) * HOUR).toISOString(),
+        direction: s.direction || ""
+      })),
+      primaryLabel: primaryLabel || "",
       lastRefreshed: null, lastError: null
     }));
   }
@@ -1197,6 +1226,38 @@
   // credit cards and growth targets is 100 years, so this sits above it;
   // anything larger overflows Date and used to throw on every tick.
   const MAX_RESET_INTERVAL_MS = 200 * 365 * 24 * 3600 * 1000;
+
+  // A card with unbounded meters stops being glanceable, and the stored
+  // record stops being small. Extra meters beyond this are dropped on load.
+  const MAX_SERIES_PER_CARD = 8;
+  // How many secondary meters to draw before collapsing the rest into "+N".
+  const VISIBLE_SECONDARY_SERIES = 4;
+
+  // ---------------------------------------------------------------------
+  // Series accessors.
+  //
+  // The account's own used/totalLimit/unit/resetTime ARE the primary series.
+  // Reading through these two functions is what lets a one-value card and a
+  // five-meter card share every code path — status, meters, countdowns,
+  // trend history and the attention layer all operate on a series, never on
+  // "the account's number".
+  // ---------------------------------------------------------------------
+  function primarySeries(acc) {
+    return {
+      key: "__primary",
+      label: acc.primaryLabel || "",
+      used: acc.used,
+      totalLimit: acc.totalLimit,
+      unit: acc.unit,
+      resetTime: acc.resetTime,
+      resetIntervalMs: acc.resetIntervalMs,
+      direction: acc.direction
+    };
+  }
+
+  function seriesOf(acc) {
+    return [primarySeries(acc)].concat(acc.series || []);
+  }
 
   // One malformed record used to take down the whole dashboard, so every
   // stored account goes through this before anything reads it. Returns
@@ -1240,7 +1301,30 @@
 
     // Per-account direction override. Empty string means "inherit the
     // account type's default" — anything unrecognized falls back to that.
-    if (acc.direction !== "growth" && acc.direction !== "depletion") acc.direction = "";
+    if (!["growth", "depletion", "usage"].includes(acc.direction)) acc.direction = "";
+
+    // v4 → v5: a card can carry several independent meters, each with its own
+    // limit AND its own reset clock (a 5-hour session window next to a weekly
+    // one). The account's own used/totalLimit/unit/resetTime remain the
+    // PRIMARY series — that keeps 25 fetchers, the editor and every stored
+    // record working unchanged — and acc.series holds any additional meters.
+    // Everything downstream reads through seriesOf()/primarySeries(), so no
+    // code has to ask "scalar or array?".
+    acc.series = Array.isArray(acc.series) ? acc.series.map(s => {
+      if (!s || typeof s !== "object") return null;
+      const lim = Number(s.totalLimit);
+      const u = Number(s.used);
+      const r = Date.parse(s.resetTime);
+      return {
+        key: typeof s.key === "string" && s.key ? s.key : uid(),
+        label: typeof s.label === "string" && s.label.trim() ? s.label.trim() : "Meter",
+        totalLimit: Number.isFinite(lim) && lim > 0 ? lim : 100,
+        used: Number.isFinite(u) && u >= 0 ? u : 0,
+        unit: typeof s.unit === "string" ? s.unit : acc.unit,
+        resetTime: Number.isFinite(r) ? new Date(r).toISOString() : null,
+        direction: ["growth", "depletion", "usage"].includes(s.direction) ? s.direction : ""
+      };
+    }).filter(Boolean).slice(0, MAX_SERIES_PER_CARD) : [];
 
     // v2 → v3: credentials moved from flat properties onto acc.creds.
     // Existing saved credentials are carried across, not abandoned.
@@ -1374,10 +1458,18 @@
   //   healthPct  — 0-100, high is always healthy, drives the badge
   //   displayPct — what the hero prints (growth may exceed 100)
   //   barPct     — clamped 0-100 for the meter width
-  function progressFor(acc) {
-    const total = Number(acc.totalLimit);
-    const used = Number(acc.used);
-    const direction = directionFor(acc);
+  // A series may override the account's direction — a card can hold a
+  // depleting quota next to a growing target.
+  function directionForSeries(acc, s) {
+    if (s && ["growth", "depletion", "usage"].includes(s.direction)) return s.direction;
+    return directionFor(acc);
+  }
+
+  function progressFor(acc, series) {
+    const s = series || primarySeries(acc);
+    const total = Number(s.totalLimit);
+    const used = Number(s.used);
+    const direction = directionForSeries(acc, s);
 
     if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(used)) {
       return { valid: false, direction, healthPct: 0, displayPct: 0, barPct: 0, suffix: "" };
@@ -1397,6 +1489,18 @@
     }
 
     const left = Math.max(0, Math.min(100, 100 - ratio));
+
+    // "usage" is depletion measured from the other end. Health is still
+    // "how much is left" — so the badge reddens as it fills, exactly like a
+    // quota — but the number printed is what you've CONSUMED, and the bar
+    // fills up rather than draining. That is how every plan-limit UI reads
+    // ("9% used"), and reading it back as "91% left" is technically true
+    // and cognitively wrong.
+    if (direction === "usage") {
+      const usedPct = Math.max(0, Math.min(100, ratio));
+      return { valid: true, direction, healthPct: left, displayPct: usedPct, barPct: usedPct, suffix: "used" };
+    }
+
     return { valid: true, direction, healthPct: left, displayPct: left, barPct: left, suffix: "left" };
   }
 
@@ -1405,8 +1509,8 @@
     return progressFor(acc).healthPct;
   }
 
-  function statusFor(acc) {
-    const p = progressFor(acc);
+  function statusForSeries(acc, series) {
+    const p = progressFor(acc, series);
     if (!p.valid) return "unknown";
     if (p.direction === "growth") {
       return p.displayPct >= 100 ? "reached" : "progress";
@@ -1414,6 +1518,19 @@
     if (p.healthPct <= 5) return "exhausted";
     if (p.healthPct <= 20) return "warning";
     return "active";
+  }
+
+  // Worst series wins. A card must never read calm while a meter inside it
+  // is exhausted — that is the whole reason the badge exists. Growth series
+  // still can't go red, so a card tracking progress toward a goal is never
+  // dragged into "warning" by being early.
+  const STATUS_SEVERITY = { reached: 0, progress: 1, active: 1, unknown: 2, warning: 3, exhausted: 4 };
+
+  function statusFor(acc) {
+    return seriesOf(acc).reduce((worst, s) => {
+      const st = statusForSeries(acc, s);
+      return (STATUS_SEVERITY[st] || 0) > (STATUS_SEVERITY[worst] || 0) ? st : worst;
+    }, "reached");
   }
 
   // Trims trailing zeros without eating the digits of a whole number:
@@ -1741,6 +1858,34 @@
     cost:        ["Equivalent API cost", "$"]
   };
   const CC_PERIOD_LABELS = { today: "today", week: "last 7 days", month: "last 30 days", all: "all time" };
+
+  // Subscription plan limits — the multi-meter card that mirrors Claude
+  // Code's /usage: session window, weekly all-models, weekly per-model.
+  //
+  // The backend half of this is a seam you fill in (see server/README →
+  // "Plan usage seam"). Until then this reports the gap honestly rather
+  // than showing a blank or invented card.
+  async function fetchClaudePlanUsage(acc) {
+    const res = await backendRequest("/usage/claude-plan");
+    const data = await res.json().catch(() => null);
+    if (!data) throw new Error("Backend returned an unreadable plan-usage result.");
+    if (data.error) throw new Error(data.error);
+    if (!Array.isArray(data.series) || !data.series.length) {
+      throw new Error("Backend returned no limit windows.");
+    }
+    // Every window is a percentage consumed, so each meter is used-of-100.
+    return {
+      series: data.series.map(s => ({
+        key: s.key,
+        label: s.label,
+        used: Number(s.used),
+        totalLimit: Number(s.totalLimit) || 100,
+        unit: s.unit || "%",
+        resetTime: s.resetTime || null,
+        direction: "usage"
+      }))
+    };
+  }
 
   async function fetchClaudeCodeUsage(acc) {
     // The container has no idea what timezone you're in; without this it
@@ -2645,6 +2790,38 @@
       if (Array.isArray(result.securityDetail)) {
         target.securityDetail = result.securityDetail.slice(0, 20).map(String);
       }
+      // A fetcher may return several independent meters instead of (or as
+      // well as) one number. Normalising here rather than at each call site
+      // means all ~25 existing fetchers keep working untouched: no `series`
+      // key simply means "one meter", which is what they already were.
+      if (Array.isArray(result.series)) {
+        const clean = result.series.map(s => {
+          const lim = Number(s && s.totalLimit);
+          const u = Number(s && s.used);
+          if (!Number.isFinite(lim) || lim <= 0 || !Number.isFinite(u)) return null;
+          const r = s.resetTime ? Date.parse(s.resetTime) : NaN;
+          return {
+            key: String((s && s.key) || uid()),
+            label: String((s && s.label) || "Meter"),
+            totalLimit: lim,
+            used: Math.max(0, u),
+            unit: typeof s.unit === "string" ? s.unit : target.unit,
+            resetTime: Number.isFinite(r) ? new Date(r).toISOString() : null,
+            direction: ["growth", "depletion", "usage"].includes(s.direction) ? s.direction : ""
+          };
+        }).filter(Boolean).slice(0, MAX_SERIES_PER_CARD);
+        // The first series becomes the hero so the card still has one
+        // headline number; the rest hang off acc.series.
+        if (clean.length) {
+          const [head, ...rest] = clean;
+          target.totalLimit = head.totalLimit;
+          target.used = head.used;
+          target.unit = head.unit;
+          target.primaryLabel = head.label;
+          if (head.resetTime) target.resetTime = head.resetTime;
+          target.series = rest;
+        }
+      }
       recordReading(target, target.used);   // a real reading from a real provider
       const nextReset = Date.parse(result.resetTime);
       if (Number.isFinite(nextReset)) target.resetTime = new Date(nextReset).toISOString();
@@ -2980,6 +3157,7 @@
 
       ${d.isCameraCard ? `<div data-camera-slot>${cameraHtml(acc)}</div>` : ""}
       ${d.isControlCard && !d.isCameraCard ? controlActionsHtml(acc) : ""}
+      <div data-series>${secondarySeriesHtml(acc)}</div>
       <div data-findings>${findingsHtml(acc)}</div>
 
       <div class="text-xs flex items-center justify-between gap-2" style="color:var(--text-muted)">
@@ -2998,6 +3176,53 @@
 
   // A count on its own ("3 changes") isn't actionable; the lines naming the
   // hosts are. Collapsed by default so a card stays card-sized.
+  // Secondary meters. Deliberately lighter than the hero — thinner bar,
+  // smaller type — so the card still has one obvious headline number and
+  // the rest read as supporting detail rather than five competing heroes.
+  function secondarySeriesHtml(acc) {
+    const extra = acc.series || [];
+    if (!extra.length) return "";
+    const shown = extra.slice(0, VISIBLE_SECONDARY_SERIES);
+    const hidden = extra.length - shown.length;
+
+    const rows = shown.map(s => {
+      const p = progressFor(acc, s);
+      const st = statusForSeries(acc, s);
+      const color = STATUS[st] ? STATUS[st].color : "var(--text-muted)";
+      const value = p.valid ? `${p.displayPct.toFixed(1)}%` : "—";
+      return `
+      <div class="series-row" data-series-key="${escapeHtml(s.key)}">
+        <div class="flex items-baseline justify-between gap-2">
+          <span class="text-xs truncate" style="color:var(--text-secondary)" title="${escapeHtml(s.label)}">${escapeHtml(s.label)}</span>
+          <span class="text-xs shrink-0 tabular" style="color:var(--text-primary)" data-series-value>${value}</span>
+        </div>
+        <div class="w-full rounded-full meter-track series-meter mt-1" role="progressbar"
+             aria-label="${escapeHtml(s.label)}"
+             aria-valuenow="${p.barPct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
+          <div class="series-meter meter-fill" data-series-fill style="width:${p.barPct}%; background:${color};"></div>
+        </div>
+        <div class="text-xs mt-0.5" style="color:var(--text-muted)" data-series-reset>${escapeHtml(seriesResetLabel(s))}</div>
+      </div>`;
+    }).join("");
+
+    return `<div class="flex flex-col gap-2 pt-1">${rows}${
+      hidden > 0
+        ? `<div class="text-xs" style="color:var(--text-muted)">+${hidden} more meter${hidden === 1 ? "" : "s"}</div>`
+        : ""
+    }</div>`;
+  }
+
+  // Each meter keeps its own clock — a 5-hour session window sits next to a
+  // weekly one, and they reset at different times.
+  function seriesResetLabel(s) {
+    if (!s.resetTime) return "";
+    const ms = Date.parse(s.resetTime) - Date.now();
+    if (!Number.isFinite(ms)) return "";
+    // The 100-year "never resets" sentinel must not render as a countdown.
+    if (ms > 365 * 24 * 3600 * 1000) return "";
+    return ms <= 0 ? "resetting…" : `resets in ${formatDuration(ms)}`;
+  }
+
   function findingsHtml(acc) {
     const lines = Array.isArray(acc.securityDetail) ? acc.securityDetail : [];
     if (!lines.length) return "";
@@ -3073,6 +3298,38 @@
       }
     }
 
+    // Secondary meters update in place like the hero does. Rewriting the
+    // whole block every second would restart CSS transitions and fight the
+    // same focus/animation problems render() caused before M4.
+    const seriesSlot = cardEl.querySelector("[data-series]");
+    if (seriesSlot) {
+      const extra = acc.series || [];
+      const rows = seriesSlot.querySelectorAll(".series-row");
+      if (rows.length !== Math.min(extra.length, VISIBLE_SECONDARY_SERIES)) {
+        seriesSlot.innerHTML = secondarySeriesHtml(acc);
+      } else {
+        rows.forEach(row => {
+          const s = extra.find(x => x.key === row.getAttribute("data-series-key"));
+          if (!s) return;
+          const p = progressFor(acc, s);
+          const st = statusForSeries(acc, s);
+          const color = STATUS[st] ? STATUS[st].color : "var(--text-muted)";
+          const val = row.querySelector("[data-series-value]");
+          const fill = row.querySelector("[data-series-fill]");
+          const reset = row.querySelector("[data-series-reset]");
+          const shownValue = p.valid ? `${p.displayPct.toFixed(1)}%` : "—";
+          if (val && val.textContent !== shownValue) val.textContent = shownValue;
+          if (fill) {
+            const w = `${p.barPct}%`;
+            if (fill.style.width !== w) fill.style.width = w;
+            if (fill.style.background !== color) fill.style.background = color;
+          }
+          const label = seriesResetLabel(s);
+          if (reset && reset.textContent !== label) reset.textContent = label;
+        });
+      }
+    }
+
     const errSlot = cardEl.querySelector("[data-error-slot]");
     if (errSlot) {
       const wanted = d.error ? errorBannerHtml(acc.id, d.error) : "";
@@ -3104,8 +3361,10 @@
   function structureSignature(list) {
     // `_acting` and the control state are included because both swap out
     // button markup, which the in-place text update path can't do.
+    // The meter count is structural too: gaining or losing a series changes
+    // how many rows exist, which the in-place path can't create.
     return list.map(a =>
-      `${a.id}:${a._refreshing ? 1 : 0}:${a._acting ? 1 : 0}:${isRealType(a) ? 1 : 0}:${a.controlState || ""}`
+      `${a.id}:${a._refreshing ? 1 : 0}:${a._acting ? 1 : 0}:${isRealType(a) ? 1 : 0}:${a.controlState || ""}:${(a.series || []).length}`
     ).join("|");
   }
 
@@ -3457,6 +3716,7 @@
     "social/twitch":            { unit: "followers", totalLimit: 1000, hours: 876000 },
     "homeassistant/sensor":     { unit: "units", totalLimit: 100, hours: 876000 },
     "homelab/json-metric":      { unit: "units", totalLimit: 100, hours: 876000 },
+    "claudecode/plan":          { unit: "%", totalLimit: 100, hours: 5, direction: "usage" },
     "claudecode/usage":         { unit: "tokens", totalLimit: 5000000, hours: 876000 },
     "security/port-drift":      { unit: "changes", totalLimit: 5, hours: 876000 },
     "security/tls-expiry":      { unit: "days", totalLimit: 90, hours: 876000 },
