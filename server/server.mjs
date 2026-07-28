@@ -661,15 +661,36 @@ const PLAN_MIN_INTERVAL_MS = 180000;
 //   CLAUDE_TOKEN_PERSONAL=sk-ant-oat01-...
 //   CLAUDE_TOKEN_WORK=sk-ant-oat01-...
 function claudeTokenAccounts() {
-  return Object.keys(env)
-    .filter(k => /^CLAUDE_TOKEN_.+/.test(k) && String(env[k] || "").trim())
-    .map(k => k.slice("CLAUDE_TOKEN_".length).toLowerCase())
-    .sort();
+  const names = new Set();
+  for (const [k, v] of Object.entries(env)) {
+    if (!String(v || "").trim()) continue;
+    if (/^CLAUDE_TOKEN_.+/.test(k)) names.add(k.slice("CLAUDE_TOKEN_".length).toLowerCase());
+    else if (/^CLAUDE_CREDENTIALS_FILE_.+/.test(k)) names.add(k.slice("CLAUDE_CREDENTIALS_FILE_".length).toLowerCase());
+  }
+  return [...names].sort();
 }
 
+const accountKey = a => String(a).toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+
 function claudeTokenFor(account) {
-  const key = "CLAUDE_TOKEN_" + String(account).toUpperCase().replace(/[^A-Z0-9_]/g, "_");
-  const val = String(env[key] || "").trim();
+  const val = String(env["CLAUDE_TOKEN_" + accountKey(account)] || "").trim();
+  return val || null;
+}
+
+// The better path for several subscriptions at once.
+//
+// Claude Code isolates its whole auth state per CLAUDE_CONFIG_DIR, so you can
+// sign three Gmail accounts in simultaneously, each into its own profile
+// directory, with no logging in and out. Point one of these at each profile's
+// .credentials.json and every account stays live at the same time.
+//
+//   CLAUDE_CREDENTIALS_FILE_MAX20=/profiles/max20/.credentials.json
+//
+// Preferred over CLAUDE_TOKEN_* because it uses the same session token we
+// know works against the usage endpoint, and it refreshes itself when the
+// CLI renews — a pasted token eventually goes stale.
+function claudeCredentialFileFor(account) {
+  const val = String(env["CLAUDE_CREDENTIALS_FILE_" + accountKey(account)] || "").trim();
   return val || null;
 }
 
@@ -740,9 +761,28 @@ async function readClaudePlanUsage(account = "") {
 
   let token = null;
 
-  // A named account resolves ONLY to a token configured on this server.
+  // A named account resolves ONLY to something configured on this server.
   if (named) {
     token = claudeTokenFor(named);
+
+    // No pasted token? Try that account's own profile credentials file.
+    if (!token) {
+      const file = claudeCredentialFileFor(named);
+      if (file) {
+        try {
+          token = findAccessToken(JSON.parse(await fsp.readFile(file, "utf8")));
+        } catch (e) {
+          throw new Error(`Could not read the credentials file for "${named}" (${file}): ${e.message}`);
+        }
+        if (!token) {
+          throw new Error(
+            `The profile for "${named}" has no Claude session token yet. ` +
+            `Sign that profile in with: CLAUDE_CONFIG_DIR=<its folder> claude auth login`
+          );
+        }
+      }
+    }
+
     if (!token) {
       const known = claudeTokenAccounts();
       throw new Error(
