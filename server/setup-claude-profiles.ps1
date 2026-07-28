@@ -26,7 +26,11 @@ Write-Host " shows, then paste it back into this window."
 Write-Host " ---------------------------------------------------------------"
 Write-Host ""
 
-$names = Read-Host " Short names for your accounts, comma separated (e.g. max20,max5,pro)"
+Write-Host " Name each account after its EMAIL, not its plan - the CLI cannot tell"
+Write-Host " a Max 5x from a Max 20x, so plan-based names end up on the wrong"
+Write-Host " account. Use the mailbox part, e.g. alex for alex@gmail.com."
+Write-Host ""
+$names = Read-Host " Short names, comma separated (e.g. alex,jordan,work)"
 $names = ($names -split ',' | ForEach-Object { ($_ -replace '[^A-Za-z0-9_]','').Trim() } | Where-Object { $_ })
 if (-not $names) { Write-Host " No usable names given." -ForegroundColor Red; Read-Host "Enter to close"; exit 1 }
 

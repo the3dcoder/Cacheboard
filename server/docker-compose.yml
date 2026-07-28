@@ -17,6 +17,15 @@ services:
       - "8787:8787"
     env_file:
       - .env
+    # Resolve through public DNS rather than inheriting the host's resolver.
+    # Observed on 2026-07-28: the LAN router was the machine's only configured
+    # nameserver, stopped answering on udp/53, and every outbound lookup in the
+    # container failed with ENOTFOUND — cards showed a fetch error while the
+    # internet itself was fine. Overriding here keeps the backend working
+    # through a flaky router; remove it if you need to resolve LAN hostnames.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       # Mount the dashboard file by file rather than the whole folder.
       # Mounting ../ would put server/.env inside the web root — the server

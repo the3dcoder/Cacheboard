@@ -653,13 +653,17 @@ const PLAN_MIN_INTERVAL_MS = 180000;
 
 // Multiple Claude accounts.
 //
-// `claude setup-token` mints a long-lived token per account; put one per
-// identity in .env as CLAUDE_TOKEN_<NAME>. The dashboard sends only the NAME
-// — never a token — so a card can't be edited into exfiltrating a credential,
-// and an unknown name is refused rather than silently falling back.
+// One entry per Google identity. The dashboard sends only the NAME — never a
+// token — so a card can't be edited into exfiltrating a credential, and an
+// unknown name is refused rather than silently falling back.
 //
-//   CLAUDE_TOKEN_PERSONAL=sk-ant-oat01-...
-//   CLAUDE_TOKEN_WORK=sk-ant-oat01-...
+// Name each account after its EMAIL, not its plan. The CLI's reported
+// subscriptionType does not distinguish a Max 5x from a Max 20x (it returned
+// "max" for a 5x and "pro" for a 20x on this machine), so a plan-derived name
+// will eventually be wrong and mislabel a card.
+//
+//   CLAUDE_CREDENTIALS_FILE_BBPYDERZ=/profiles/bbpyderz/.credentials.json
+//   CLAUDE_LABEL_BBPYDERZ=bbpyderz@gmail.com (Max 20x)
 function claudeTokenAccounts() {
   const names = new Set();
   for (const [k, v] of Object.entries(env)) {
@@ -668,6 +672,27 @@ function claudeTokenAccounts() {
     else if (/^CLAUDE_CREDENTIALS_FILE_.+/.test(k)) names.add(k.slice("CLAUDE_CREDENTIALS_FILE_".length).toLowerCase());
   }
   return [...names].sort();
+}
+
+// Human-readable name for an account, from CLAUDE_LABEL_<NAME>. Purely
+// cosmetic — it never selects a credential — so it is safe to hand to the
+// browser, and it is what lets the dashboard offer "add a card for this
+// account" with the owner already filled in.
+function claudeAccountLabel(account) {
+  return String(env["CLAUDE_LABEL_" + accountKey(account)] || "").trim();
+}
+
+// What the dashboard needs to auto-offer cards: which accounts exist, what to
+// call them, and whether each one is actually usable right now. `ready` is a
+// file-existence check only — a profile directory with no .credentials.json
+// means that identity has never been signed in.
+function claudeAccountDirectory() {
+  return claudeTokenAccounts().map(name => {
+    const file = claudeCredentialFileFor(name);
+    let ready = !!claudeTokenFor(name);
+    if (!ready && file) { try { ready = fs.statSync(file).isFile(); } catch { ready = false; } }
+    return { name, label: claudeAccountLabel(name) || name, ready };
+  });
 }
 
 const accountKey = a => String(a).toUpperCase().replace(/[^A-Z0-9_]/g, "_");
@@ -795,10 +820,10 @@ async function readClaudePlanUsage(account = "") {
     if (!token) {
       const known = claudeTokenAccounts();
       throw new Error(
-        `No token configured for account "${named}". ` +
-        (known.length ? `Known accounts: ${known.join(", ")}.` : "No CLAUDE_TOKEN_* entries are set in the server's .env.") +
-        " Run `claude setup-token` for that account and add it as CLAUDE_TOKEN_" +
-        named.toUpperCase().replace(/[^A-Z0-9_]/g, "_") + "."
+        `No credentials configured for account "${named}". ` +
+        (known.length ? `Known accounts: ${known.join(", ")}.` : "No Claude accounts are configured in the server's .env.") +
+        ` Sign that identity in with Sign-in-${named}.cmd, which writes ` +
+        `~/claude-profiles/${named}/.credentials.json.`
       );
     }
   }
@@ -830,8 +855,8 @@ async function readClaudePlanUsage(account = "") {
       throw new Error(
         "No Claude subscription OAuth token found. Candidates scored: " +
         (cands.length ? cands.join(", ") : "(none)") +
-        ". This file may hold only MCP plugin tokens. Easiest fix: run " +
-        "`claude setup-token` and add the result to .env as CLAUDE_TOKEN_<NAME>."
+        ". This file may hold only MCP plugin tokens. Sign the identity in "
+        + "again so a subscription token is written."
       );
     }
   }
@@ -1060,6 +1085,9 @@ const server = http.createServer(async (req, res) => {
         return s.ready ? s.ready() : (env[s.needs] || "").trim();
       }),
       claudeAccounts: claudeTokenAccounts(),
+      // Names plus display labels and readiness, so the dashboard can offer
+      // one-click card creation per identity. Labels only — no credentials.
+      claudeAccountDetails: claudeAccountDirectory(),
       staticHosting: !!STATIC_DIR,
       authRequired: !!DASHBOARD_TOKEN
     }, cors);

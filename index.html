@@ -959,11 +959,14 @@
           value: "plan", label: "Plan limits (session + weekly, all windows)", fetch: fetchClaudePlanUsage,
           direction: "usage",
           fields: [
-            // Only a NAME travels from the browser. The token itself lives in
-            // the server's .env as CLAUDE_TOKEN_<NAME>, so a card can't be
-            // edited into carrying or leaking a credential.
-            { key: "claudeAccount", label: "Claude account", type: "text", full: true,
-              placeholder: "personal  →  matches CLAUDE_TOKEN_PERSONAL in server .env" }
+            // Only a NAME travels from the browser. The credential itself
+            // stays in the server's .env, so a card can't be edited into
+            // carrying or leaking one. The list comes from the backend, so
+            // there is no account name to remember or mistype; if the backend
+            // is unreachable this degrades to a plain text box.
+            { key: "claudeAccount", label: "Claude account", type: "select", full: true,
+              options: () => claudeAccountOptions(),
+              placeholder: "account name as configured in the server's .env" }
           ],
           help: "One card, one meter per limit window — session, weekly all-models, and each per-model weekly cap — mirroring Claude Code's /usage. Needs the plan-usage seam filled in on the backend (server/README → \"Plan usage seam\"); until then it reports that plainly instead of showing a blank card."
         },
@@ -1102,6 +1105,39 @@
     if (res.status === 401) throw new Error("Backend rejected the token — check it matches DASHBOARD_TOKEN in the server's .env.");
     if (!res.ok) throw await httpFail(res, "Backend");
     return res;
+  }
+
+  // Claude identities the backend has credentials for.
+  //
+  // Populated from /health, which returns names and display labels only —
+  // never tokens. Cached so the account dropdown can be built synchronously
+  // while a form is rendering, and refreshed whenever the backend settings
+  // change or a card fetch succeeds.
+  let detectedClaudeAccounts = [];
+
+  function claudeAccountOptions() {
+    return detectedClaudeAccounts.map(a => [
+      a.name,
+      a.ready ? a.label : `${a.label} — not signed in`
+    ]);
+  }
+
+  async function probeBackendAccounts() {
+    if (!backendConfigured()) { detectedClaudeAccounts = []; return detectedClaudeAccounts; }
+    try {
+      const info = await (await backendRequest("/health")).json();
+      const list = Array.isArray(info.claudeAccountDetails) ? info.claudeAccountDetails : [];
+      detectedClaudeAccounts = list
+        .filter(a => a && typeof a.name === "string" && a.name)
+        .map(a => ({
+          name: String(a.name).slice(0, 60),
+          label: String(a.label || a.name).slice(0, 80),
+          ready: a.ready !== false
+        }));
+    } catch {
+      // A backend that's down shouldn't blank a list the user is looking at.
+    }
+    return detectedClaudeAccounts;
   }
 
   // Swaps a stored refresh token for a fresh access token. The refresh
@@ -3528,13 +3564,18 @@
       return `<input type="hidden" id="${id}" value="${escapeHtml(value)}">`;
     }
     const span = field.full ? " sm:col-span-2" : "";
-    const control = field.type === "select"
+    // `options` may be a function so a field can be filled from whatever the
+    // backend reports rather than from a list hard-coded here. If it resolves
+    // empty — backend down, nothing configured — fall through to a text input
+    // so the field stays usable instead of becoming an empty dropdown.
+    const opts = typeof field.options === "function" ? field.options() : field.options;
+    const control = field.type === "select" && opts && opts.length
       ? `<select id="${id}" class="w-full rounded-lg px-3 py-2 mt-1 text-sm">${
-          (field.options || []).map(([v, l]) =>
+          opts.map(([v, l]) =>
             `<option value="${escapeHtml(v)}"${String(value) === v ? " selected" : ""}>${escapeHtml(l)}</option>`
           ).join("")
         }</select>`
-      : `<input type="${field.type || "text"}" id="${id}" value="${escapeHtml(value)}"${field.type === "number" ? ' step="any"' : ""}
+      : `<input type="${field.type === "select" ? "text" : (field.type || "text")}" id="${id}" value="${escapeHtml(value)}"${field.type === "number" ? ' step="any"' : ""}
                 class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="${escapeHtml(field.placeholder || "")}">`;
     // `browse: true` pairs the input with a picker so entity ids never
     // have to be typed or looked up in another tab.
@@ -3722,6 +3763,15 @@
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  function renderOwnerSuggestions() {
+    const el = document.getElementById("ownerSuggestions");
+    if (!el) return;
+    const owners = new Set(accounts.map(a => a.owner).filter(Boolean));
+    detectedClaudeAccounts.forEach(a => owners.add(a.label));
+    el.innerHTML = [...owners].sort()
+      .map(o => `<option value="${escapeHtml(o)}"></option>`).join("");
+  }
+
   function openModal(id) {
     const form = document.getElementById("accountForm");
     form.reset();
@@ -3734,9 +3784,9 @@
     document.getElementById("f_owner").value = acc ? (acc.owner || "") : "";
     // Suggest identities already in use so they stay spelled consistently —
     // "work@gmail" and "Work@Gmail" would otherwise become two filters.
-    document.getElementById("ownerSuggestions").innerHTML =
-      [...new Set(accounts.map(a => a.owner).filter(Boolean))].sort()
-        .map(o => `<option value="${escapeHtml(o)}"></option>`).join("");
+    // Identities the backend knows about are offered too, so the first card
+    // for an account can pick the same label rather than inventing one.
+    renderOwnerSuggestions();
 
     const platform = acc ? acc.platform : "chatgpt";
     document.getElementById("f_platform").value = platform;
@@ -3744,6 +3794,23 @@
     document.getElementById("f_accountType").value = acc ? acc.accountType : PLATFORMS[platform].accountTypes[0].value;
     document.getElementById("f_typeNote").textContent = PLATFORMS[platform].note;
     renderCredentialFields(platform, document.getElementById("f_accountType").value, acc || {});
+
+    // Re-ask the backend which identities exist, and redraw if the answer
+    // changed — so an account signed in a minute ago shows up without a page
+    // reload. Guarded on the modal still being open and on the same account,
+    // since the user may have moved on while the request was in flight.
+    probeBackendAccounts().then(list => {
+      if (!list.length) return;
+      const overlay = document.getElementById("modalOverlay");
+      if (!overlay || overlay.classList.contains("hidden")) return;
+      if (document.getElementById("f_id").value !== (acc ? acc.id : "")) return;
+      renderOwnerSuggestions();
+      const platformNow = document.getElementById("f_platform").value;
+      const typeNow = document.getElementById("f_accountType").value;
+      // Re-read first so anything already typed survives the redraw.
+      const creds = readCredentialFields(platformNow, typeNow, (acc && acc.creds) || {});
+      renderCredentialFields(platformNow, typeNow, { creds });
+    });
 
     setFormError("");
     document.getElementById("f_direction").value = (acc && acc.direction) || "";
@@ -4303,6 +4370,13 @@
         const bits = [];
         if (info.proxies && info.proxies.length) bits.push(`proxies: ${info.proxies.join(", ")}`);
         if (info.oauth && info.oauth.length) bits.push(`oauth: ${info.oauth.join(", ")}`);
+        // Reporting the identities here is what makes the connection concrete
+        // — "connected" alone doesn't tell you whether your accounts arrived.
+        await probeBackendAccounts();
+        if (detectedClaudeAccounts.length) {
+          const ready = detectedClaudeAccounts.filter(a => a.ready).length;
+          bits.push(`Claude accounts: ${ready}/${detectedClaudeAccounts.length} signed in`);
+        }
         if (!info.authRequired) bits.push("⚠ no token set server-side");
         statusEl.textContent = `Connected. ${bits.join(" · ") || "No providers configured yet."}`;
         statusEl.style.color = "var(--status-good-text)";
@@ -4438,6 +4512,10 @@
     // Everything is wired now — safe to paint and start the clock.
     render();
     setInterval(tick, 1000);
+    // Ask the backend which Claude identities it has credentials for, so the
+    // account picker is already populated the first time a form is opened.
+    // Deliberately not awaited: the dashboard is fully usable without it.
+    probeBackendAccounts();
   }
 
   document.addEventListener("DOMContentLoaded", init);
