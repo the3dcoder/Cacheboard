@@ -1,0 +1,3554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Limit Tracker Dashboard</title>
+<!-- Tailwind, vendored.
+     This replaces the Tailwind Play CDN script tag. That script executed
+     third-party JS on every load of a page holding API keys and OAuth
+     tokens, and could not be integrity-pinned. What follows is the
+     generated CSS for the ~90 utility classes this file actually uses,
+     plus Tailwind's preflight reset. Nothing is fetched at runtime, so the
+     page also styles correctly offline / opened directly from disk.
+
+     Adding a NEW utility class to the markup means adding its rule here. -->
+<style>
+  /* --- preflight (trimmed to what this page relies on) --- */
+  *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #e5e7eb; }
+  html { line-height: 1.5; -webkit-text-size-adjust: 100%; font-family: ui-sans-serif, system-ui, sans-serif; }
+  body { margin: 0; line-height: inherit; }
+  h1, h2, h3, h4, p { margin: 0; font-size: inherit; font-weight: inherit; }
+  button, input, select, textarea { font-family: inherit; font-size: 100%; font-weight: inherit; line-height: inherit; color: inherit; margin: 0; padding: 0; }
+  button, select { text-transform: none; }
+  button { -webkit-appearance: button; background-color: transparent; background-image: none; cursor: pointer; }
+  :disabled { cursor: default; }
+  svg { display: block; vertical-align: middle; }
+
+  /* --- position --- */
+  .static { position: static; } .relative { position: relative; } .absolute { position: absolute; }
+  .fixed { position: fixed; } .sticky { position: sticky; }
+  .inset-0 { inset: 0; }
+  .top-0 { top: 0; } .bottom-4 { bottom: 1rem; } .right-4 { right: 1rem; }
+  .left-\[3px\] { left: 3px; } .top-\[3px\] { top: 3px; }
+  .z-20 { z-index: 20; } .z-30 { z-index: 30; } .z-40 { z-index: 40; }
+
+  /* --- display (.hidden last so it wins over .flex/.grid by source order) --- */
+  .block { display: block; }
+  .inline-flex { display: inline-flex; }
+  .flex { display: flex; }
+  .grid { display: grid; }
+  .hidden { display: none; }
+
+  /* --- flex & grid --- */
+  .flex-1 { flex: 1 1 0%; }
+  .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }
+  .shrink-0 { flex-shrink: 0; }
+  .items-start { align-items: flex-start; }
+  .items-center { align-items: center; }
+  .items-end { align-items: flex-end; }
+  .justify-center { justify-content: center; }
+  .justify-between { justify-content: space-between; }
+  .justify-end { justify-content: flex-end; }
+  .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .col-span-2 { grid-column: span 2 / span 2; }
+  .items-stretch { align-items: stretch; }
+  .gap-1 { gap: 0.25rem; } .gap-1\.5 { gap: 0.375rem; } .gap-2 { gap: 0.5rem; }
+  .gap-3 { gap: 0.75rem; } .gap-5 { gap: 1.25rem; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+
+  /* --- sizing --- */
+  .w-3\.5 { width: 0.875rem; } .w-4 { width: 1rem; } .w-8 { width: 2rem; }
+  .w-9 { width: 2.25rem; } .w-full { width: 100%; }
+  .h-2\.5 { height: 0.625rem; } .h-3\.5 { height: 0.875rem; } .h-4 { height: 1rem; }
+  .h-5 { height: 1.25rem; } .h-8 { height: 2rem; }
+  .min-h-screen { min-height: 100vh; }
+  .min-w-0 { min-width: 0px; }
+  .max-w-lg { max-width: 32rem; }
+  .max-w-7xl { max-width: 80rem; }
+
+  /* --- spacing --- */
+  .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; }
+  .px-2 { padding-left: .5rem; padding-right: .5rem; }
+  .px-3 { padding-left: .75rem; padding-right: .75rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .py-1 { padding-top: .25rem; padding-bottom: .25rem; }
+  .py-1\.5 { padding-top: .375rem; padding-bottom: .375rem; }
+  .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+  .py-3 { padding-top: .75rem; padding-bottom: .75rem; }
+  .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+  .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+  .pb-3 { padding-bottom: .75rem; }
+  .mt-1 { margin-top: .25rem; } .mt-1\.5 { margin-top: .375rem; } .mt-2 { margin-top: .5rem; }
+  .mb-2 { margin-bottom: .5rem; } .mb-3 { margin-bottom: .75rem; } .mb-4 { margin-bottom: 1rem; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  .my-8 { margin-top: 2rem; margin-bottom: 2rem; }
+  .ml-auto { margin-left: auto; }
+
+  /* --- typography --- */
+  .text-xs { font-size: .75rem; line-height: 1rem; }
+  .text-sm { font-size: .875rem; line-height: 1.25rem; }
+  .text-base { font-size: 1rem; line-height: 1.5rem; }
+  .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+  .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .font-normal { font-weight: 400; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; }
+  .text-center { text-align: center; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* --- borders, background, overflow --- */
+  .border { border-width: 1px; }
+  .border-b { border-bottom-width: 1px; }
+  .rounded { border-radius: .25rem; }
+  .rounded-lg { border-radius: .5rem; }
+  .rounded-2xl { border-radius: 1rem; }
+  .rounded-full { border-radius: 9999px; }
+  .bg-white { background-color: #fff; }
+  .overflow-y-auto { overflow-y: auto; }
+  .overflow-x-auto { overflow-x: auto; }
+  .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+
+  /* --- responsive --- */
+  @media (min-width: 640px) {
+    .sm\:items-center { align-items: center; }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sm\:col-span-2 { grid-column: span 2 / span 2; }
+  }
+  @media (min-width: 1280px) {
+    .xl\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>
+<!-- Pinned to an exact version with an integrity hash. A floating "@3" tag
+     cannot be hash-verified, which meant this page executed whatever the CDN
+     served, in a document that holds API keys and OAuth tokens.
+     To upgrade: change BOTH the version and the hash together. -->
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.30.0/lib/msal-browser.min.js"
+        integrity="sha384-YnOjsoOxSYo65h1BXWnSq24bFbqW8HfzMWSEQxYEMRmjW9Vl1J3HZI3iZxqNYvIi"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:            #0d0d0d;
+    --surface-1:       #1a1a19;
+    --surface-2:       #222221;
+    --text-primary:    #ffffff;
+    --text-secondary:  #c3c2b7;
+    --text-muted:      #898781;
+    --border:          rgba(255,255,255,0.10);
+    --border-strong:   rgba(255,255,255,0.18);
+
+    /* Saturated hues — for bars, dots and fills only. */
+    --status-good:      #0ca30c;
+    --status-good-bg:   rgba(12,163,12,0.14);
+    --status-warning:   #fab219;
+    --status-warning-bg:rgba(250,178,25,0.14);
+    --status-critical:  #d03b3b;
+    --status-critical-bg:rgba(208,59,59,0.14);
+
+    /* Text-safe variants. The saturated hues measured 4.39:1 (Active) and
+       3.22:1 (Exhausted) as TEXT on their own tinted badge backgrounds —
+       both under the 4.5:1 minimum, on the two states that matter most.
+       These are lifted toward white until they clear it; warning already
+       passed at 7.18:1 and is unchanged. Marks keep the saturated hue. */
+    --status-good-text:     #16a716;  /* 4.61:1 on its badge tint */
+    --status-warning-text:  #fab219;  /* 7.18:1 — no change needed  */
+    --status-critical-text: #db6a6a;  /* 4.63:1 on its badge tint  */
+
+    /* Per-platform colours used to live here as 22 CSS variables that had
+       to be added alongside every new platform. They're now a single
+       `hue` on the PLATFORMS entry, with the badge tint derived from it. */
+    --accent: #9085e9;
+  }
+  body { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); }
+  .surface-2 { background: var(--surface-2); border: 1px solid var(--border); }
+  .meter-track { background: var(--surface-2); }
+  .meter-fill { transition: width .4s ease; border-radius: 4px; }
+  .hero-figure { font-variant-numeric: proportional-nums; }
+  ::placeholder { color: var(--text-muted); opacity: 1; }
+  input[type="text"], input[type="number"], input[type="password"], input[type="datetime-local"], select {
+    background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-primary);
+  }
+  input:focus, select:focus { outline: 2px solid rgba(144,133,233,0.5); outline-offset: 1px; }
+  /* Nothing in this file defined a focus ring for buttons, so keyboard
+     users had no idea where they were. */
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px;
+  }
+  .toggle-track { background: var(--surface-2); border: 1px solid var(--border-strong); }
+  .toggle-track[data-on="true"] { background: var(--status-good); border-color: var(--status-good); }
+  .toggle-thumb { transition: transform .15s ease; }
+  .toggle-track[data-on="true"] .toggle-thumb { transform: translateX(16px); }
+
+  /* Selection state lives here rather than in inline styles — inline
+     styles won the cascade and left the active pill indistinguishable. */
+  .filter-pill, .summary-chip {
+    border-color: var(--border); color: var(--text-muted);
+    background: transparent; white-space: nowrap;
+  }
+  .filter-pill-count { color: var(--text-muted); }
+  .filter-pill:hover, .summary-chip:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+  .filter-pill[data-active="true"], .summary-chip[data-active="true"] {
+    background: var(--surface-2);
+    border-color: var(--accent);
+    color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .filter-pill[data-active="true"] .filter-pill-count { color: var(--text-primary); }
+  .summary-chip { display: inline-flex; align-items: center; gap: .375rem; }
+
+  /* 44px minimum touch target on the controls fingers actually hit. */
+  @media (pointer: coarse) {
+    .filter-pill, .summary-chip, .refresh-btn, .edit-btn { min-height: 44px; }
+    #addAccountBtn, #refreshAllBtn, #liveSimToggle { min-height: 44px; }
+  }
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* The dialog caps its own height and scrolls internally rather than
+     growing to 1,259px and pushing Save off the bottom of the page. */
+  .modal-panel {
+    background: var(--surface-1);
+    border: 1px solid var(--border-strong);
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+  @supports (height: 100dvh) {
+    .modal-panel { max-height: calc(100dvh - 4rem); }
+  }
+  .modal-actions {
+    position: sticky; bottom: 0;
+    background: var(--surface-1);
+    padding: .75rem 0; margin-top: .25rem;
+    border-top: 1px solid var(--border);
+  }
+  /* Keeps the page behind the modal from scrolling under it. */
+  body.modal-open { overflow: hidden; }
+
+  .entity-list { max-height: 46vh; overflow-y: auto; border: 1px solid var(--border); border-radius: .5rem; }
+  .entity-row {
+    display: block; width: 100%; text-align: left;
+    padding: .5rem .75rem; border-bottom: 1px solid var(--border);
+    color: var(--text-primary); font-size: .8125rem;
+  }
+  .entity-row:last-child { border-bottom: 0; }
+  .entity-row:hover, .entity-row:focus-visible { background: var(--surface-2); }
+  .entity-row .eid { color: var(--text-muted); font-size: .75rem; }
+  .findings ul { margin: 0; padding-left: 1rem; list-style: disc; }
+  .findings li { margin-top: .125rem; word-break: break-word; }
+  .control-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+  .control-btn:disabled { opacity: .5; }
+  code { background: var(--surface-2); padding: 0 .25rem; border-radius: .25rem; }
+  .toast { background: var(--surface-1); border: 1px solid var(--border-strong); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-20 border-b" style="background:rgba(13,13,13,0.9); backdrop-filter: blur(6px); border-color: var(--border);">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-lg font-semibold" style="color:var(--text-primary)">Limit Tracker Dashboard</h1>
+      <p class="text-xs" style="color:var(--text-muted)" id="headerSubtitle"></p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="flex items-center gap-2 text-sm" style="color:var(--text-secondary)">
+        <span id="liveSimLabel">Live simulation</span>
+        <button id="liveSimToggle" type="button" class="toggle-track w-9 h-5 rounded-full relative" data-on="false" aria-pressed="false" aria-labelledby="liveSimLabel">
+          <span class="toggle-thumb block w-3.5 h-3.5 rounded-full bg-white absolute top-[3px] left-[3px]"></span>
+        </button>
+      </div>
+      <button id="refreshAllBtn" type="button" class="text-sm font-medium px-3 py-2 rounded-lg"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">
+        Refresh stale
+      </button>
+      <button id="settingsBtn" type="button" class="text-sm font-medium px-3 py-2 rounded-lg"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">
+        Settings
+      </button>
+      <button id="addAccountBtn" type="button" class="text-sm font-medium px-3 py-2 rounded-lg" style="background:var(--accent); color:#0d0d0d;">
+        + Add Account
+      </button>
+    </div>
+  </div>
+  <!-- Horizontal scroll instead of a 901px-wide bar forcing the whole page
+       sideways on a phone. -->
+  <div class="max-w-7xl mx-auto px-4 pb-3 overflow-x-auto" role="group" aria-label="Filter by platform">
+    <div class="flex items-center gap-2 text-xs" id="filterBar"></div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6">
+  <div id="summaryStrip" class="mb-4 flex flex-wrap items-center gap-2 text-xs"></div>
+  <div id="cardGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start"></div>
+  <div id="emptyState" class="hidden text-center py-16" style="color:var(--text-muted)">
+    No accounts yet &mdash; click <span style="color:var(--text-secondary)">Add Account</span> to get started.
+  </div>
+</main>
+
+<!-- Add / Edit modal -->
+<div id="modalOverlay" class="hidden fixed inset-0 z-30 flex items-start sm:items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.6);">
+  <form id="accountForm" class="modal-panel rounded-2xl w-full max-w-lg p-5 my-8"
+        role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="flex items-center justify-between mb-4">
+      <h2 id="modalTitle" class="text-base font-semibold">Add Account</h2>
+      <button type="button" id="closeModalBtn" class="text-sm px-2 py-1 rounded" style="color:var(--text-muted)">Close</button>
+    </div>
+
+    <input type="hidden" id="f_id">
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      <label class="block col-span-2">
+        <span class="text-xs" style="color:var(--text-muted)">Account name</span>
+        <input type="text" id="f_name" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="e.g. Personal, Work Team">
+      </label>
+
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)">Platform</span>
+        <!-- Options are generated from PLATFORMS at startup — this list
+             used to be a twelfth place a new platform had to be added. -->
+        <select id="f_platform" class="w-full rounded-lg px-3 py-2 mt-1 text-sm"></select>
+      </label>
+
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)">Account type</span>
+        <select id="f_accountType" class="w-full rounded-lg px-3 py-2 mt-1 text-sm"></select>
+      </label>
+    </div>
+
+    <!-- Collapsed by default: these notes run up to ~1,280 characters and
+         pushed the modal past 1,200px tall on Azure/quota. -->
+    <details id="f_typeNoteWrap" class="mb-3 rounded-lg" style="background:var(--surface-2);">
+      <summary class="text-xs px-3 py-2" style="color:var(--text-secondary); cursor:pointer">Setup notes &amp; caveats</summary>
+      <p id="f_typeNote" class="text-xs px-3 pb-3" style="color:var(--text-secondary)"></p>
+    </details>
+
+    <div id="f_credentials" class="space-y-3 mb-3"></div>
+
+    <label class="block mb-3" id="f_directionWrap">
+      <span class="text-xs" style="color:var(--text-muted)">Which way is healthy?</span>
+      <select id="f_direction" class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+        <option value="">Use the default for this account type</option>
+        <option value="depletion">Lower is better &mdash; a quota or budget being used up</option>
+        <option value="growth">Higher is better &mdash; progress toward a target</option>
+      </select>
+      <span class="text-xs" style="color:var(--text-muted)" id="f_directionHint"></span>
+    </label>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)" id="f_totalLimitLabel">Total limit</span>
+        <input type="number" id="f_totalLimit" min="0.01" step="any" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+      </label>
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)">Used so far</span>
+        <input type="number" id="f_used" min="0" step="any" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+      </label>
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)">Unit label</span>
+        <input type="text" id="f_unit" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="tokens, messages, seats...">
+      </label>
+      <label class="block">
+        <span class="text-xs" style="color:var(--text-muted)">Resets at</span>
+        <input type="datetime-local" id="f_resetTime" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+      </label>
+    </div>
+
+    <label class="block mb-4">
+      <span class="text-xs" style="color:var(--text-muted)">Auto-reset cycle length (hours) &mdash; used to reschedule the next reset for manual/simulated accounts once the countdown hits zero</span>
+      <input type="number" id="f_resetIntervalHours" min="0.017" max="1752000" step="any" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+    </label>
+
+    <p id="f_formError" class="hidden text-xs rounded-lg px-3 py-2 mb-3" role="alert"
+       style="background:var(--status-critical-bg); color:var(--status-critical-text);"></p>
+
+    <!-- Sticky so Save stays reachable on the taller credential forms
+         instead of sitting ~1,200px down the page. -->
+    <div class="flex items-center justify-between gap-2 modal-actions">
+      <button type="button" id="deleteAccountBtn" class="hidden text-sm px-3 py-2 rounded-lg" style="color:var(--status-critical-text); background:var(--status-critical-bg);">Delete</button>
+      <div class="flex items-center gap-2 ml-auto">
+        <button type="button" id="cancelModalBtn" class="text-sm px-3 py-2 rounded-lg" style="color:var(--text-secondary); background:var(--surface-2);">Cancel</button>
+        <button type="submit" class="text-sm font-medium px-4 py-2 rounded-lg" style="background:var(--accent); color:#0d0d0d;">Save</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Settings: the Home Assistant connection shared by every HA card.
+     Leaving it empty is fine — the rest of the dashboard doesn't care. -->
+<div id="settingsOverlay" class="hidden fixed inset-0 z-30 flex items-start sm:items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.6);">
+  <form id="settingsForm" class="modal-panel rounded-2xl w-full max-w-lg p-5 my-8"
+        role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="flex items-center justify-between mb-4">
+      <h2 id="settingsTitle" class="text-base font-semibold">Settings</h2>
+      <button type="button" id="closeSettingsBtn" class="text-sm px-2 py-1 rounded" style="color:var(--text-muted)">Close</button>
+    </div>
+
+    <h3 class="text-sm font-medium mb-2">Home Assistant connection</h3>
+    <p class="text-xs mb-3" style="color:var(--text-muted)">
+      Shared by every Home Assistant card, so you enter it once. Everything else on this
+      dashboard works without it.
+    </p>
+
+    <label class="block mb-3">
+      <span class="text-xs" style="color:var(--text-muted)">Base URL</span>
+      <input type="text" id="s_haBaseUrl" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="http://homeassistant.local:8123">
+    </label>
+    <label class="block mb-3">
+      <span class="text-xs" style="color:var(--text-muted)">Long-lived access token</span>
+      <input type="password" id="s_haToken" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="Profile → Security → Long-lived access tokens">
+    </label>
+
+    <div class="flex items-center gap-2 flex-wrap mb-3">
+      <button type="button" id="testHaBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Test connection</button>
+      <span id="haTestStatus" class="text-xs" style="color:var(--text-muted)"></span>
+    </div>
+
+    <p class="text-xs mb-4" style="color:var(--text-muted)">
+      Add this page's origin under <code>http: cors_allowed_origins</code> in
+      <code>configuration.yaml</code> and restart HA. Serving this file from HA's own
+      <code>/config/www</code> folder skips that entirely, since it's then same-origin.
+    </p>
+
+    <h3 class="text-sm font-medium mb-2">Backend companion <span style="color:var(--text-muted); font-weight:400">(optional)</span></h3>
+    <p class="text-xs mb-3" style="color:var(--text-muted)">
+      Only needed for things a browser can't do on its own: OpenAI API usage (which blocks
+      browser calls outright) and keeping OAuth tokens alive. Leave blank and everything
+      else works exactly as it does now. Setup is in <code>server/</code>.
+    </p>
+
+    <label class="block mb-3">
+      <span class="text-xs" style="color:var(--text-muted)">Backend URL</span>
+      <input type="text" id="s_backendBaseUrl" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="http://localhost:8787">
+    </label>
+    <label class="block mb-3">
+      <span class="text-xs" style="color:var(--text-muted)">Backend token</span>
+      <input type="password" id="s_backendToken" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="DASHBOARD_TOKEN from the server's .env">
+    </label>
+
+    <div class="flex items-center gap-2 flex-wrap mb-4">
+      <button type="button" id="testBackendBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Test backend</button>
+      <span id="backendTestStatus" class="text-xs" style="color:var(--text-muted)"></span>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 modal-actions">
+      <button type="button" id="cancelSettingsBtn" class="text-sm px-3 py-2 rounded-lg" style="color:var(--text-secondary); background:var(--surface-2);">Cancel</button>
+      <button type="submit" class="text-sm font-medium px-4 py-2 rounded-lg" style="background:var(--accent); color:#0d0d0d;">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Entity picker: one /api/states call, searchable, so no entity ids
+     ever need typing. -->
+<div id="entityOverlay" class="hidden fixed inset-0 z-40 flex items-start sm:items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.6);">
+  <div class="modal-panel rounded-2xl w-full max-w-lg p-5 my-8" role="dialog" aria-modal="true" aria-labelledby="entityTitle">
+    <div class="flex items-center justify-between mb-3">
+      <h2 id="entityTitle" class="text-base font-semibold">Pick an entity</h2>
+      <button type="button" id="closeEntityBtn" class="text-sm px-2 py-1 rounded" style="color:var(--text-muted)">Close</button>
+    </div>
+    <input type="text" id="entitySearch" class="w-full rounded-lg px-3 py-2 mb-3 text-sm" placeholder="Search by name or id…" autocomplete="off">
+    <div id="entityList" class="entity-list"></div>
+    <p id="entityHint" class="text-xs mt-2" style="color:var(--text-muted)"></p>
+  </div>
+</div>
+
+<div id="toastContainer" class="fixed bottom-4 right-4 z-40 flex flex-col gap-2 items-end"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Config: platform + account-type metadata. Add a new platform here
+  // later (e.g. azure, website, financial) to extend the dashboard.
+  // ---------------------------------------------------------------------
+
+  // Every Home Assistant card needs exactly one thing from you: which
+  // entity. The connection itself is a global setting, and `browse: true`
+  // renders a picker so you never have to type an entity id.
+  const ENTITY_FIELD = {
+    key: "entityId", label: "Entity", type: "text",
+    placeholder: "light.kitchen", required: true, full: true, browse: true
+  };
+
+  const PLATFORMS = {
+    chatgpt: {
+      label: "ChatGPT",
+      icon: '<path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/>',
+      hue: "#199e70",
+      accountTypes: [
+        // Consumer plans expose no usage API at all, from any origin, so
+        // this one stays manual regardless of the backend.
+        { value: "consumer", label: "Consumer subscription (Plus/Team)" },
+        {
+          value: "api-key", label: "OpenAI API key (via backend)", fetch: fetchOpenAiUsage,
+          fields: [
+            { key: "openaiDays", label: "Days to total", type: "number", placeholder: "30" }
+          ],
+          help: "Goes through the backend companion, because OpenAI sends no CORS headers and refuses browser calls outright. The API key lives in the server's .env, never in this page. Reports API-key spend against the budget you set as \"Total limit\"."
+        }
+      ],
+      // OpenAI sends no Access-Control-Allow-Origin header and does not
+      // support direct browser calls, by design. The backend companion
+      // (M7) is the only way around it; without one, this stays manual.
+      note: "OpenAI blocks direct browser API calls (no CORS support, by design). The API-key card works through the optional backend companion, which holds the key server-side — set it up in Settings. Consumer ChatGPT Plus/Team plans expose no usage API at all and stay manual either way."
+    },
+    claude: {
+      label: "Claude",
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="1.6"/>',
+      hue: "#d95926",
+      accountTypes: [
+        { value: "consumer", label: "Consumer subscription (Pro/Team)" },
+        {
+          value: "api-key", label: "Anthropic API key", fetch: fetchClaudeUsage,
+          fields: [
+            { key: "apiKey", label: "Anthropic API key", type: "password", placeholder: "sk-ant-...", required: true, full: true }
+          ],
+          help: "Stored only in this browser's local storage and sent only directly to Anthropic when you click Refresh. Anyone with access to this file/browser can read it via dev tools — treat it like a password, and prefer a low-limit or restricted key."
+        }
+      ],
+      note: "API-key accounts refresh live via a direct browser call to Anthropic (anthropic-dangerous-direct-browser-access), reading the account's real rate-limit headers. This sends a real minimal request (max_tokens: 1) each time you click Refresh, so it may incur a tiny real cost. Consumer subscriptions have no public API and stay manual."
+    },
+    copilot: {
+      label: "GitHub Copilot",
+      icon: '<path d="M12 4l6 3.5v9L12 20l-6-3.5v-9L12 4z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="12" r="1.3" fill="currentColor"/><circle cx="15" cy="12" r="1.3" fill="currentColor"/>',
+      hue: "#9085e9",
+      accountTypes: [
+        {
+          value: "individual", label: "Copilot Individual (Pro/Pro+/Max)", fetch: fetchCopilotUsage,
+          fields: [
+            { key: "githubUsername", label: "GitHub username", type: "text", placeholder: "your-username", required: true },
+            { key: "githubToken", label: "GitHub token", type: "password", placeholder: "ghp_...", required: true },
+            { key: "copilotEndpoint", label: "Endpoint override (optional)", type: "text", placeholder: "defaults to /users/{username}/settings/billing/ai_credit/usage", full: true }
+          ],
+          help: "Try a classic PAT with manage_billing:copilot scope first. GitHub's docs mainly describe this endpoint for org/enterprise admins — if your token gets a 403 here, that's GitHub confirming personal accounts can't self-serve this yet, and the card will just stay on manual refresh. Overrides are restricted to api.github.com."
+        },
+        {
+          value: "org-admin", label: "Copilot Business/Enterprise (org admin token)", fetch: fetchCopilotUsage,
+          fields: [
+            { key: "orgLogin", label: "Org login", type: "text", placeholder: "acme-inc", required: true },
+            { key: "githubToken", label: "GitHub token", type: "password", placeholder: "ghp_...", required: true },
+            { key: "copilotEndpoint", label: "Endpoint override (optional)", type: "text", placeholder: "defaults to /organizations/{org}/settings/billing/ai_credit/usage", full: true }
+          ],
+          help: "Token needs org admin / manage_billing:copilot scope (classic PAT). Stored only in this browser's local storage and sent only directly to GitHub when you click Refresh."
+        }
+      ],
+      note: "Both types attempt a real refresh via GitHub's AI Credits usage API (api.github.com/.../settings/billing/ai_credit/usage), which supports direct browser calls like GitHub's other REST endpoints. This API changed in June 2026 and GitHub's docs are ambiguous about whether a personal (non-org) account can call it for itself — your token will give a definitive answer. It reports spend, not a plan limit, so \"Total limit\" here is whatever your plan's monthly AI Credit allotment is (e.g. $15 Pro / $70 Pro+ / $200 Max) — set it manually and refresh will keep \"Used\" current. If it 403s, the endpoint field lets you try an alternate path without editing code."
+    },
+    azure: {
+      label: "Azure",
+      icon: '<path d="M8 4h5l-6 12h9l-9 4 3-9H6z" fill="currentColor" stroke="none"/>',
+      hue: "#3987e5",
+      accountTypes: [
+        {
+          value: "cost", label: "Subscription cost vs. budget", fetch: fetchAzureCost, connect: "azure",
+          fields: [
+            { key: "azureTenantId", label: "Azure AD Tenant ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "azureClientId", label: "Azure AD Client ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "subscriptionId", label: "Subscription ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true, full: true }
+          ],
+          help: "No client secret involved — this is Microsoft's own browser-only sign-in pattern. Only works over http(s) (serve this file locally, don't just double-click it), and the exact URL you serve it from must be registered as a redirect URI on the app registration. Click Connect once before Refresh will work; a token from one Tenant/Client ID pair is reused for every account using that same pair."
+        },
+        {
+          value: "quota", label: "Resource quota (real limit + usage)", fetch: fetchAzureQuota, connect: "azure",
+          fields: [
+            { key: "azureTenantId", label: "Azure AD Tenant ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "azureClientId", label: "Azure AD Client ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "subscriptionId", label: "Subscription ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true, full: true },
+            { key: "azureResourceProvider", label: "Resource provider", type: "text", placeholder: "Microsoft.Compute" },
+            { key: "azureLocation", label: "Location", type: "text", placeholder: "eastus" },
+            { key: "azureQuotaItem", label: "Quota item name", type: "text", placeholder: "Total Regional vCPUs", required: true, full: true },
+            { key: "azureEndpoint", label: "Endpoint override (optional)", type: "text", placeholder: "defaults to the usages API for that provider/location", full: true }
+          ],
+          help: "Matches by partial, case-insensitive name against whatever the usages API returns — e.g. \"Total Regional vCPUs\" or \"cores\". This is a real limit and real usage straight from Azure, not a number you set. Different resource providers use different API versions; if the default 404s, put an alternate path in the endpoint override. Overrides are restricted to management.azure.com so your Azure token can't be sent elsewhere."
+        },
+        {
+          value: "health", label: "Resource health status", fetch: fetchAzureHealth, connect: "azure", display: "status",
+          fields: [
+            { key: "azureTenantId", label: "Azure AD Tenant ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "azureClientId", label: "Azure AD Client ID", type: "text", placeholder: "xxxxxxxx-xxxx-...", required: true },
+            { key: "azureResourceId", label: "Resource ID", type: "text", placeholder: "/subscriptions/xxx/resourceGroups/xxx/providers/...", required: true, full: true },
+            { key: "azureEndpoint", label: "Endpoint override (optional)", type: "text", placeholder: "defaults to Resource Health's availabilityStatuses/current", full: true }
+          ],
+          help: "Find the Resource ID on the resource's Overview page in the portal (its JSON view, or the \"Resource ID\" field near Essentials). There's no real \"limit\" for health, just a status — Available/Degraded/Unavailable map onto the same Active/Warning/Exhausted badges as everything else on a synthetic scale, and the real state text replaces the unit label each refresh."
+        }
+      ],
+      note: "Signs in with your real Microsoft account via Azure's own public-client OAuth pattern (MSAL.js, no backend secret involved). \"Cost\" reads month-to-date spend against a budget you set yourself (Azure doesn't enforce one). \"Quota\" reads a real limit AND real usage straight from Azure's own usages API for a resource provider/location — no manual number needed, unlike everything else in this dashboard. \"Health\" maps Available/Degraded/Unavailable onto the same Active/Warning/Exhausted badges on a synthetic 0-100 scale, since a health status isn't naturally a percentage. All three only work when the page is served over http(s) (e.g. a local static server), never when opened as a file:// path, because Microsoft's login can't redirect back to a file URL. Click \"Connect Microsoft Account\" once per browser session before Refresh will work — one sign-in (per Tenant/Client ID pair) covers all three types."
+    },
+    financial: {
+      label: "Financial",
+      icon: '<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="14.5" r="1" fill="currentColor"/>',
+      hue: "#008300",
+      accountTypes: [
+        { value: "credit-card", label: "Credit card (limit vs. balance)" },
+        { value: "budget",      label: "Monthly bill vs. budget" }
+      ],
+      note: "No bank or card API involved on purpose — real account aggregation (e.g. Plaid) requires a backend to hold a secret that can never live in a browser, and this dashboard intentionally doesn't have one. Update these by hand as statements/bills come in, same as your consumer ChatGPT/Claude cards. Credit cards track available credit (limit minus balance); a monthly bill tracks spend against a budget you set, and \"Auto-reset\" is best left off (a very long cycle length) for credit cards specifically, since a real balance doesn't zero out on its own the way an AI quota does."
+    },
+    cloudflare: {
+      label: "Cloudflare",
+      icon: '<path d="M17 15.5a3.5 3.5 0 0 0-3.4-4.5c-.3 0-.6 0-.9.1A5 5 0 0 0 4 13.2 3.2 3.2 0 0 0 4.2 19.5H17a3.2 3.2 0 0 0 0-6.4z" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+      hue: "#d55181",
+      accountTypes: [
+        {
+          value: "zone-analytics", label: "Zone traffic vs. monthly budget", fetch: fetchCloudflareUsage,
+          fields: [
+            { key: "cloudflareToken", label: "Cloudflare API token", type: "password", placeholder: "paste token", required: true },
+            { key: "zoneId", label: "Zone ID", type: "text", placeholder: "32-char hex id", required: true }
+          ],
+          help: "Create the token at dash.cloudflare.com → My Profile → API Tokens, scoped to Zone → Analytics → Read for this specific zone. The Zone ID is on the zone's Overview page, right sidebar. Stored only in this browser's local storage and sent only directly to Cloudflare when you click Refresh."
+        }
+      ],
+      note: "Refreshes live via Cloudflare's GraphQL Analytics API, which supports direct browser calls with an API token (no CORS block, confirmed live during testing) — reads real month-to-date request volume for a zone. \"Total limit\" is a traffic budget you set yourself, not a Cloudflare-enforced cap (their plans don't generally have a hard request limit). SiteGround was evaluated but doesn't expose a usage-quota API for customers, so it isn't wired here."
+    },
+    investments: {
+      label: "Investments",
+      icon: '<path d="M4 18l5-6 4 3 7-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+      hue: "#c98500",
+      accountTypes: [
+        {
+          value: "crypto", label: "Crypto holding (live price)", fetch: fetchCryptoValue, direction: "growth",
+          fields: [
+            { key: "investmentSymbol", label: "CoinGecko coin id", type: "text", placeholder: "bitcoin", required: true },
+            { key: "investmentQuantity", label: "Quantity held", type: "number", placeholder: "0.5", required: true }
+          ],
+          help: "No API key needed — CoinGecko's price endpoint is open. Use the coin's API id, not its ticker (find it on the coin's CoinGecko page URL, e.g. coingecko.com/en/coins/bitcoin)."
+        },
+        {
+          value: "stock", label: "Stock holding (live price)", fetch: fetchStockValue, direction: "growth",
+          fields: [
+            { key: "investmentSymbol", label: "Ticker", type: "text", placeholder: "AAPL", required: true },
+            { key: "investmentQuantity", label: "Quantity held", type: "number", placeholder: "10", required: true },
+            { key: "investmentToken", label: "Finnhub API key", type: "password", placeholder: "free key from finnhub.io", required: true, full: true }
+          ],
+          help: "Free key from finnhub.io/register — no credit card needed. Stored only in this browser's local storage."
+        }
+      ],
+      note: "No brokerage login involved — real account aggregation needs a backend the same way banking does (see the Financial platform's note). Instead: you enter the quantity you hold once, and Refresh pulls a real live price (CoinGecko for crypto, confirmed CORS-open with no key needed; Finnhub for stocks, confirmed CORS-open with a free API key) to compute current value. \"Total limit\" doubles as an optional target value — set it high if you just want to watch the number, or to a real goal if you want the bar to mean something. The value itself is 100% real market data either way."
+    },
+    social: {
+      label: "Social / Content",
+      icon: '<circle cx="7" cy="12" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="6.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="17.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 10.7l6-3.2M9 13.3l6 3.2" stroke="currentColor" stroke-width="1.5"/>',
+      hue: "#e66767",
+      accountTypes: [
+        {
+          value: "youtube", label: "YouTube channel (subscribers)", fetch: fetchYoutubeStats, direction: "growth",
+          fields: [
+            { key: "youtubeApiKey", label: "YouTube Data API key", type: "password", placeholder: "from Google Cloud Console", required: true },
+            { key: "youtubeChannelId", label: "Channel ID", type: "text", placeholder: "UC...", required: true }
+          ],
+          help: "Create an API key in Google Cloud Console with the YouTube Data API v3 enabled (no OAuth needed for public stats). Find the channel ID via the channel's \"Share\" → \"Copy channel ID\", not the @handle. Stored only in this browser's local storage."
+        },
+        {
+          value: "github-repo", label: "GitHub repo (stars)", fetch: fetchGithubRepoStars, direction: "growth",
+          fields: [
+            { key: "githubRepo", label: "Repo (owner/repo)", type: "text", placeholder: "anthropics/claude-code", required: true },
+            { key: "githubToken", label: "GitHub token (optional)", type: "password", placeholder: "raises the rate limit" }
+          ],
+          help: "Star counts are public — no token required for a public repo, though GitHub limits unauthenticated requests to 60/hour vs 5,000/hour with any token."
+        },
+        {
+          value: "discord", label: "Discord server (online members)", fetch: fetchDiscordStats, direction: "growth",
+          fields: [
+            { key: "discordGuildId", label: "Server (guild) ID", type: "text", placeholder: "right-click server icon → Copy Server ID", required: true, full: true }
+          ],
+          help: "No token needed. Requires Server Settings → Widget → Enable Server Widget turned on first. Gives online-member count, not total members — total requires a bot with server access, a bigger setup."
+        },
+        {
+          value: "twitch", label: "Twitch channel (followers)", fetch: fetchTwitchFollowers, connect: "twitch", direction: "growth",
+          fields: [
+            { key: "twitchClientId", label: "Twitch Client ID", type: "text", placeholder: "from dev.twitch.tv console", required: true },
+            { key: "twitchLogin", label: "Channel login (username)", type: "text", placeholder: "your_channel_name", required: true },
+            { key: "twitchToken", type: "hidden" }
+          ],
+          help: "Register an app at dev.twitch.tv/console/apps with OAuth Redirect URL set to this page's exact URL, type \"Public\". No client secret is used. Save the account first, then Connect. Reading a total follower count requires signing in as that channel."
+        }
+      ],
+      note: "YouTube reads real subscriber count via the YouTube Data API (confirmed CORS-open with just a public API key, no OAuth). GitHub reads a repo's real star count via the same REST API already proven for Copilot (public data — a token is optional, just raises your rate limit). Discord reads a server's real online-member count via its public widget API (confirmed CORS-open, no auth) — Server Settings → Widget → Enable Server Widget must be turned on first; note this gives the online count, not total members, since total member count needs a bot with server access, a heavier setup. Twitch reads your real follower count after a one-click OAuth sign-in (implicit flow — no client secret, token lives only in this browser). \"Total limit\" doubles as a growth target, same as Investments. Instagram, Facebook, and TikTok need Business verification plus a multi-week Meta/TikTok App Review — see NOTES.md for the full setup path; they're documented rather than built because the blocker is account approval, not code."
+    },
+    homeassistant: {
+      label: "Home Assistant",
+      icon: '<path d="M12 3l8 6.5V21h-5v-6H9v6H4V9.5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+      hue: "#4fb3e8",
+      accountTypes: [
+        {
+          value: "sensor", label: "Numeric sensor (meter)", fetch: fetchHomeAssistantSensor,
+          fields: [ENTITY_FIELD],
+          help: "For entities whose state is a number — power draw, temperature, throughput, counts. Non-numeric entities belong on a Status or Control card instead."
+        },
+        {
+          value: "status", label: "Read-only state (door, motion, presence)", fetch: fetchHaEntityState, display: "status",
+          fields: [ENTITY_FIELD],
+          help: "Shows the entity's state word with no controls — binary sensors, device trackers, anything you want to watch but not change."
+        },
+        {
+          value: "toggle", label: "Toggle (light, switch, fan, input boolean)", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD],
+          // turn_on/turn_off/toggle is a shared contract across many HA
+          // domains, so one card type covers all of them.
+          actions: acc => {
+            const d = entityDomain(acc.creds.entityId) || "homeassistant";
+            const id = acc.creds.entityId;
+            return [
+              { label: "On",     run: () => haCallService(d, "turn_on",  { entity_id: id }) },
+              { label: "Off",    run: () => haCallService(d, "turn_off", { entity_id: id }) },
+              { label: "Toggle", run: () => haCallService(d, "toggle",   { entity_id: id }) }
+            ];
+          },
+          help: "Works for any domain supporting turn_on/turn_off — light, switch, fan, input_boolean, siren, humidifier and more. The domain is taken from the entity id."
+        },
+        {
+          value: "lock", label: "Lock", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD],
+          actions: acc => [
+            { label: "Lock",   run: () => haCallService("lock", "lock",   { entity_id: acc.creds.entityId }) },
+            { label: "Unlock", run: () => haCallService("lock", "unlock", { entity_id: acc.creds.entityId }), confirm: "Unlock this?" }
+          ],
+          help: "Unlocking asks for confirmation first — it's the one action here with a physical-security consequence."
+        },
+        {
+          value: "cover", label: "Cover / blind / garage", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD],
+          actions: acc => [
+            { label: "Open",  run: () => haCallService("cover", "open_cover",  { entity_id: acc.creds.entityId }) },
+            { label: "Close", run: () => haCallService("cover", "close_cover", { entity_id: acc.creds.entityId }) },
+            { label: "Stop",  run: () => haCallService("cover", "stop_cover",  { entity_id: acc.creds.entityId }) }
+          ],
+          help: "Covers, blinds, shades and garage doors."
+        },
+        {
+          value: "scene", label: "Scene / script / automation (run)", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD],
+          actions: acc => {
+            const d = entityDomain(acc.creds.entityId);
+            const id = acc.creds.entityId;
+            if (d === "script")     return [{ label: "Run", run: () => haCallService("script", "turn_on", { entity_id: id }) }];
+            if (d === "automation") return [
+              { label: "Trigger", run: () => haCallService("automation", "trigger", { entity_id: id }) },
+              { label: "Enable",  run: () => haCallService("automation", "turn_on",  { entity_id: id }) },
+              { label: "Disable", run: () => haCallService("automation", "turn_off", { entity_id: id }) }
+            ];
+            return [{ label: "Activate", run: () => haCallService("scene", "turn_on", { entity_id: id }) }];
+          },
+          help: "Buttons adapt to the entity: scenes activate, scripts run, automations can be triggered or enabled/disabled."
+        },
+        {
+          value: "climate", label: "Climate / thermostat", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD, { key: "climateStep", label: "Adjust step (°)", type: "number", placeholder: "1" }],
+          actions: (acc, attrs) => {
+            const id = acc.creds.entityId;
+            const step = Number(acc.creds.climateStep) || 1;
+            const target = Number(attrs && attrs.temperature);
+            const nudge = delta => () => {
+              if (!Number.isFinite(target)) {
+                return Promise.reject(new Error("Home Assistant hasn't reported a target temperature for this entity yet — hit Refresh first."));
+              }
+              return haCallService("climate", "set_temperature",
+                { entity_id: id, temperature: Math.round((target + delta) * 10) / 10 });
+            };
+            return [
+              { label: `−${step}°`, run: nudge(-step) },
+              { label: `+${step}°`, run: nudge(step) },
+              { label: "Off",       run: () => haCallService("climate", "turn_off", { entity_id: id }) }
+            ];
+          },
+          summary: attrs => {
+            const cur = Number(attrs.current_temperature);
+            const tgt = Number(attrs.temperature);
+            const bits = [];
+            if (Number.isFinite(cur)) bits.push(`now ${cur}°`);
+            if (Number.isFinite(tgt)) bits.push(`target ${tgt}°`);
+            return bits.join(" · ");
+          },
+          help: "The hero shows the HVAC mode; current and target temperature sit underneath. Adjustment is relative to whatever HA last reported as the target."
+        },
+        {
+          value: "media", label: "Media player", fetch: fetchHaEntityState, display: "control",
+          fields: [ENTITY_FIELD],
+          actions: acc => {
+            const id = acc.creds.entityId;
+            return [
+              { label: "Play/Pause", run: () => haCallService("media_player", "media_play_pause", { entity_id: id }) },
+              { label: "Prev",       run: () => haCallService("media_player", "media_previous_track", { entity_id: id }) },
+              { label: "Next",       run: () => haCallService("media_player", "media_next_track", { entity_id: id }) },
+              { label: "Vol −",      run: () => haCallService("media_player", "volume_down", { entity_id: id }) },
+              { label: "Vol +",      run: () => haCallService("media_player", "volume_up", { entity_id: id }) }
+            ];
+          },
+          summary: attrs => {
+            const bits = [];
+            if (attrs.media_title) bits.push(String(attrs.media_title));
+            if (attrs.media_artist) bits.push(String(attrs.media_artist));
+            if (Number.isFinite(Number(attrs.volume_level))) bits.push(`vol ${Math.round(Number(attrs.volume_level) * 100)}%`);
+            return bits.join(" · ");
+          },
+          help: "Transport controls plus whatever the player reports as now-playing."
+        },
+        {
+          value: "camera", label: "Camera snapshot", fetch: fetchHaEntityState, display: "camera",
+          fields: [ENTITY_FIELD],
+          help: "Shows a still image, re-fetched whenever the card refreshes. A continuous stream is a much heavier lift and isn't wired here. Works with Frigate cameras, which appear as normal camera entities."
+        }
+      ],
+      note: "Reads AND controls Home Assistant over its REST API. Connect once in Settings (base URL + long-lived token from your HA profile page), then Browse to pick entities — you never type an entity id. Requires this page's serving origin under http: cors_allowed_origins in configuration.yaml, then an HA restart; serving the dashboard from HA's own /config/www folder avoids the CORS setup entirely since it's then same-origin. Control cards call HA services directly and re-read the entity immediately afterwards, so a card never looks stale right after you act on it. Everything else in this dashboard works with no Home Assistant at all."
+    },
+    homelab: {
+      label: "Home Lab",
+      icon: '<rect x="4" y="4" width="16" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="10.5" width="16" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="17" width="16" height="3.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="6.5" r="0.7" fill="currentColor"/><circle cx="7" cy="13" r="0.7" fill="currentColor"/>',
+      hue: "#8b8f9e",
+      accountTypes: [
+        {
+          value: "json-metric", label: "Generic JSON metric (any local device)", fetch: fetchHomeLabMetric,
+          fields: [
+            { key: "homelabUrl", label: "URL", type: "text", placeholder: "http://192.168.1.x/api/...", required: true, full: true },
+            { key: "homelabAuthHeader", label: "Auth header name (optional)", type: "text", placeholder: "Authorization or X-API-KEY" },
+            { key: "homelabAuthValue", label: "Auth header value (optional)", type: "password", placeholder: "Bearer token or key" },
+            { key: "homelabPath", label: "JSON field path", type: "text", placeholder: "dns_queries_today or cameras.front_door.fps", required: true, full: true }
+          ],
+          help: "Generic by design — see the platform note for why. Works for anything that answers HTTP with JSON and sends usable CORS headers; if the device sends none at all, the request fails before this code sees a response."
+        }
+      ],
+      note: "A generic tool rather than dedicated Pi-hole/Frigate/UniFi integrations — I can't reach devices on your LAN from here to verify their exact API shape or CORS behavior, and each has changed its API over versions (Pi-hole especially, between v5 and v6). Instead: point it at any URL that returns JSON, optionally with an auth header, and a dot-path to the numeric field you want (e.g. \"dns_queries_today\" or \"cameras.front_door.fps\"). Works for Pi-hole, Frigate, UniFi's local or cloud APIs, or literally any smart device/script that answers HTTP with JSON. If the device sends no CORS headers at all (common for admin panels never meant for third-party browser access), the request fails before this code even sees a response — that shows up as a generic network error, not a clean HTTP error."
+    },
+    security: {
+      label: "Security",
+      icon: '<path d="M12 3l7 3v5.5c0 4.2-2.9 7.9-7 8.9-4.1-1-7-4.7-7-8.9V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+      hue: "#e34948",
+      accountTypes: [
+        {
+          value: "port-drift", label: "Open-port drift vs baseline", fetch: fetchPortDrift,
+          help: "TCP-connect scan of the hosts in SECURITY_HOSTS, compared against a saved baseline. The first run records the baseline; after that this counts ports that opened or closed. Zero is healthy — set \"Total limit\" to how many changes you'd tolerate before the card goes red. Risky services (Telnet, FTP, exposed databases, unauthenticated Ollama or Moonraker) are called out by name even when they haven't changed."
+        },
+        {
+          value: "tls-expiry", label: "Days until soonest cert expiry", fetch: fetchTlsExpiry, direction: "growth",
+          help: "Reports the fewest days remaining across every host in SECURITY_TLS_HOSTS, so one card covers the whole estate. Set \"Total limit\" to the comfort threshold you want to reach — 90 days is a common choice. Self-signed and untrusted certs are flagged in the detail rather than treated as failures, since a home lab legitimately has them."
+        },
+        {
+          value: "http-headers", label: "Missing security headers", fetch: fetchHttpHeaders,
+          help: "Checks your own services in SECURITY_HTTP_URLS for HSTS, CSP, X-Content-Type-Options, X-Frame-Options and Referrer-Policy. Counts how many are missing in total. Zero is healthy."
+        }
+      ],
+      note: "Continuous self-assessment of your own network, run by the backend companion — a browser can't open raw sockets or complete a TLS handshake against another host. Every target is read from the server's .env, never from this page, so a card can only ever check hosts you listed yourself. All three checks are passive: a TCP connect, a TLS handshake, an HTTP GET. Nothing is exploited, nothing is written to. Tool-based checks (arp-scan for new devices, nuclei, IDS log parsing) need binaries and host networking the container doesn't have — server/README.md documents how to add them."
+    },
+    health: {
+      label: "Health",
+      icon: '<path d="M12 20s-7-4.4-9.3-8.8C1.3 8 3 5 6.2 5c2 0 3.4 1.2 4.3 2.6C11.4 6.2 12.8 5 14.8 5 18 5 19.7 8 18.3 11.2 16 15.6 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+      hue: "#e0729a",
+      accountTypes: [
+        { value: "manual", label: "Manual entry (steps, sleep, heart rate, etc.)", direction: "growth" },
+        {
+          value: "fitbit", label: "Fitbit (live via OAuth)", fetch: fetchFitbitActivity, connect: "fitbit", direction: "growth",
+          fields: [
+            { key: "fitbitClientId", label: "Fitbit Client ID", type: "text", placeholder: "from dev.fitbit.com", required: true },
+            { key: "fitbitMetric", label: "Metric", type: "select", options: [
+              ["steps", "Steps"], ["caloriesOut", "Calories burned"], ["distance", "Distance"], ["floors", "Floors"]
+            ] },
+            { key: "fitbitToken", type: "hidden" }
+          ],
+          help: "Register an app at dev.fitbit.com/apps with OAuth type \"Client\" (PKCE) and Redirect URL set to this page's exact URL. No client secret is used. Save the account first, then Connect. Tokens last ~8 hours — reconnect when a refresh reports an auth error."
+        }
+      ],
+      note: "Fitbit refreshes live: sign in once with \"Connect Fitbit\" (OAuth PKCE — no client secret, confirmed browser-callable including the token exchange) and Refresh reads real daily activity. Pixel Watch stays manual — Health Connect is Android-on-device-only with no cloud API to read, so there's genuinely nothing to call. Manual entries work like the Financial cards: type the number in yourself. Note Fitbit access tokens expire after 8 hours; re-click Connect when a refresh starts failing with an auth error (storing a refresh token long-term is the kind of thing that wants a backend)."
+    }
+  };
+
+  // `color` paints the mark (bar, dot); `text` paints the label. They
+  // differ because the saturated hue fails contrast as small text on its
+  // own tint — see the --status-*-text notes in the stylesheet.
+  const STATUS = {
+    active:    { label: "Active",    color: "var(--status-good)",     bg: "var(--status-good-bg)",     text: "var(--status-good-text)" },
+    warning:   { label: "Warning",   color: "var(--status-warning)",  bg: "var(--status-warning-bg)",  text: "var(--status-warning-text)" },
+    exhausted: { label: "Exhausted", color: "var(--status-critical)", bg: "var(--status-critical-bg)", text: "var(--status-critical-text)" },
+    // Growth cards (a subscriber count, a portfolio target) have no
+    // failure state — being early toward a goal is not an emergency, so
+    // they never go red. They sit neutral until the target is met.
+    progress:  { label: "In progress",    color: "var(--text-secondary)", bg: "rgba(255,255,255,0.06)" },
+    reached:   { label: "Target reached", color: "var(--status-good)",    bg: "var(--status-good-bg)" },
+    unknown:   { label: "No data",        color: "var(--text-muted)",     bg: "rgba(255,255,255,0.06)" }
+  };
+
+  // The storage KEY is deliberately frozen at .v1 forever — changing it
+  // would orphan every saved credential. Schema changes are versioned
+  // inside the payload instead and migrated on load.
+  const STORAGE_ACCOUNTS = "limitDashboard.accounts.v1";
+  const STORAGE_LIVE_SIM = "limitDashboard.liveSim.v1";
+  const STORAGE_SETTINGS = "limitDashboard.settings.v1";
+  const STORAGE_SCHEMA_VERSION = 4;
+
+  // ---------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------
+  let accounts = [];
+  let liveSimEnabled = false;
+  let activeFilter = "all";
+  let tickCount = 0;
+  // Connection details shared by every Home Assistant card. Empty is a
+  // perfectly valid state — the dashboard works with no HA at all.
+  let settings = { haBaseUrl: "", haToken: "", backendBaseUrl: "", backendToken: "" };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_SETTINGS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          return {
+            haBaseUrl: String(parsed.haBaseUrl || ""),
+            haToken: String(parsed.haToken || ""),
+            backendBaseUrl: String(parsed.backendBaseUrl || ""),
+            backendToken: String(parsed.backendToken || "")
+          };
+        }
+      }
+    } catch (e) { console.warn("Settings unreadable, starting fresh:", e); }
+    return { haBaseUrl: "", haToken: "", backendBaseUrl: "", backendToken: "" };
+  }
+
+  // ---------------------------------------------------------------------
+  // Optional backend companion.
+  //
+  // Everything works without it. It exists only for the three things a
+  // browser genuinely cannot do: reach an API that refuses browser calls,
+  // hold a secret the page must not see, and keep a refresh token alive.
+  // A blank backend URL means the dashboard behaves exactly as before.
+  // ---------------------------------------------------------------------
+  function backendConfigured() {
+    return !!(settings.backendBaseUrl && settings.backendToken);
+  }
+
+  async function backendRequest(path, options) {
+    if (!backendConfigured()) {
+      throw new Error("This needs the backend companion — open Settings and add its URL and token. See server/README in the repo.");
+    }
+    const base = String(settings.backendBaseUrl).replace(/\/+$/, "");
+    const opts = Object.assign({}, options);
+    opts.headers = Object.assign(
+      { "Authorization": `Bearer ${settings.backendToken}` },
+      opts.headers || {}
+    );
+    let res;
+    try {
+      res = await fetch(base + path, opts);
+    } catch (e) {
+      throw new Error(`Could not reach the backend at ${base} — check it's running and that this page's origin is in its ALLOWED_ORIGINS.`);
+    }
+    if (res.status === 401) throw new Error("Backend rejected the token — check it matches DASHBOARD_TOKEN in the server's .env.");
+    if (!res.ok) throw await httpFail(res, "Backend");
+    return res;
+  }
+
+  // Swaps a stored refresh token for a fresh access token. The refresh
+  // token itself never comes back to the browser.
+  async function backendRefreshToken(provider) {
+    const res = await backendRequest(`/token/${encodeURIComponent(provider)}/refresh`, { method: "POST" });
+    const data = await res.json();
+    if (!data.access_token) throw new Error("Backend returned no access token.");
+    return data.access_token;
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings)); }
+    catch (e) { console.warn("Could not save settings:", e); }
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // "Live" now means exactly one thing: this account type has a fetch
+  // function attached. Previously a hand-maintained `real:` flag and a
+  // 15-branch dispatch chain had to agree, and when they didn't the card
+  // wore a green "● Live" badge over a fabricated number.
+  function isRealType(acc) {
+    const t = typeMetaFor(acc);
+    return !!(t && typeof t.fetch === "function");
+  }
+
+  // Credentials are STORED namespaced under acc.creds so generic code can
+  // enumerate them and the account object stays tidy. Fetchers read them
+  // as plain properties (acc.apiKey), which keeps each one readable and
+  // avoids rewriting ~60 property references. This hands a fetcher a
+  // flattened, throwaway copy — fetchers only ever read.
+  function credView(acc) {
+    return Object.assign({}, acc, acc.creds || {});
+  }
+
+  // Because credView hands out a throwaway copy, a token obtained mid-fetch
+  // has to be written back to the real account or it's lost on the next
+  // refresh — which would defeat the point of refreshing it.
+  function persistFitbitToken(accountId, token) {
+    const live = accounts.find(a => a.id === accountId);
+    if (!live) return;
+    live.creds = live.creds || {};
+    live.creds.fitbitToken = token;
+    persist();
+  }
+
+  // Every credential key any account type declares. Used to migrate old
+  // flat-shaped records into acc.creds on load.
+  const ALL_CRED_KEYS = (() => {
+    const keys = new Set();
+    Object.values(PLATFORMS).forEach(p =>
+      (p.accountTypes || []).forEach(t =>
+        (t.fields || []).forEach(f => keys.add(f.key))));
+    return keys;
+  })();
+
+  // ---------------------------------------------------------------------
+  // Seed / persistence
+  // ---------------------------------------------------------------------
+  // Example accounts, one row each. normalizeAccount() fills in every
+  // other field, so nothing here restates ~950 empty credential strings
+  // the way the old 404-line literal did.
+  //
+  // Columns: name, platform, accountType, totalLimit, used, unit,
+  //          hours until reset, cycle length in hours, optional creds.
+  const NEVER = 876000;   // ~100 years: "this doesn't reset on its own"
+
+  const SEED_ROWS = [
+    ["ChatGPT Plus — Personal",        "chatgpt",       "consumer",       40,      22,     "messages",              1.2,  3],
+    ["OpenAI API — Sandbox",           "chatgpt",       "api-key",        1000000, 640000, "tokens",                18,   24],
+    ["Claude Pro — Personal",          "claude",        "consumer",       45,      39,     "messages",              2.4,  5],
+    ["Anthropic API — Production",     "claude",        "api-key",        400000,  150000, "tokens",                0.0167, 0.0167],
+    ["GitHub Copilot — the3dcoder",    "copilot",       "individual",     200,     138,    "AI credits ($)",        216,  720,  { githubUsername: "the3dcoder" }],
+    ["GitHub Copilot — Acme Org",      "copilot",       "org-admin",      500,     210,    "AI credits ($)",        480,  720],
+    ["Azure — Production Subscription","azure",         "cost",           1000,    612,    "$ spent",               264,  720],
+    ["Azure — Compute Quota",          "azure",         "quota",          100,     42,     "vCPUs",                 NEVER, NEVER, { azureResourceProvider: "Microsoft.Compute", azureLocation: "eastus", azureQuotaItem: "Total Regional vCPUs" }],
+    ["Azure — Web VM Health",          "azure",         "health",         100,     0,      "Available",             NEVER, NEVER],
+    ["PNC Credit Card",                "financial",     "credit-card",    5000,    1200,   "$ balance",             NEVER, NEVER],
+    ["Amex Personal",                  "financial",     "credit-card",    10000,   3400,   "$ balance",             NEVER, NEVER],
+    ["Amex Business",                  "financial",     "credit-card",    15000,   8200,   "$ balance",             NEVER, NEVER],
+    ["Consumers Energy — Gas",         "financial",     "budget",         150,     95,     "$ this cycle",          336,  720],
+    ["DTE Energy — Electric",          "financial",     "budget",         200,     178,    "$ this cycle",          144,  720],
+    ["Cloudflare — Website Traffic",   "cloudflare",    "zone-analytics", 100000,  41200,  "requests this month",   264,  720],
+    ["Bitcoin Holding",                "investments",   "crypto",         50000,   16000,  "$ value",               NEVER, NEVER, { investmentSymbol: "bitcoin", investmentQuantity: "0.25" }],
+    ["AAPL Holding",                   "investments",   "stock",          5000,    2850,   "$ value",               NEVER, NEVER, { investmentSymbol: "AAPL", investmentQuantity: "15" }],
+    ["YouTube Channel",                "social",        "youtube",        10000,   3200,   "subscribers",           NEVER, NEVER],
+    ["GitHub Repo Stars",              "social",        "github-repo",    1000,    340,    "stars",                 NEVER, NEVER],
+    ["Discord — Community Server",     "social",        "discord",        500,     87,     "online",                NEVER, NEVER],
+    ["Twitch — Channel Followers",     "social",        "twitch",         1000,    215,    "followers",             NEVER, NEVER],
+    ["Home Assistant — Network Traffic","homeassistant","sensor",         500,     210,    "Mbps",                  NEVER, NEVER, { entityId: "sensor.unifi_download_speed" }],
+    ["Kitchen Light",                  "homeassistant", "toggle",         100,     0,      "",                      NEVER, NEVER, { entityId: "light.kitchen" }],
+    ["Front Door",                     "homeassistant", "status",         100,     0,      "",                      NEVER, NEVER, { entityId: "binary_sensor.front_door" }],
+    ["Living Room Thermostat",         "homeassistant", "climate",        100,     0,      "",                      NEVER, NEVER, { entityId: "climate.living_room", climateStep: "1" }],
+    ["Pi-hole — DNS Queries Today",    "homelab",       "json-metric",    100000,  42000,  "queries",               NEVER, NEVER, { homelabPath: "dns_queries_today" }],
+    ["Open-port drift",                "security",      "port-drift",     5,       0,      "changes",               NEVER, NEVER],
+    ["Certificate expiry",             "security",      "tls-expiry",     90,      90,     "days",                  NEVER, NEVER],
+    ["Security headers",               "security",      "http-headers",   10,      0,      "missing",               NEVER, NEVER],
+    ["Pixel Watch — Daily Steps",      "health",        "manual",         10000,   6400,   "steps",                 6,    24],
+    ["Fitbit — Daily Steps (wife)",    "health",        "fitbit",         10000,   5200,   "steps",                 6,    24,   { fitbitMetric: "steps" }]
+  ];
+
+  function seedMockData() {
+    const now = Date.now();
+    const HOUR = 3600 * 1000;
+    return SEED_ROWS.map(([name, platform, accountType, totalLimit, used, unit, resetInHours, cycleHours, creds]) => ({
+      id: uid(), name, platform, accountType, totalLimit, used, unit,
+      resetTime: new Date(now + resetInHours * HOUR).toISOString(),
+      resetIntervalMs: cycleHours * HOUR,
+      creds: creds || {},
+      lastRefreshed: null, lastError: null
+    }));
+  }
+
+  // Longest allowed reset cycle. The "effectively never" sentinel used by
+  // credit cards and growth targets is 100 years, so this sits above it;
+  // anything larger overflows Date and used to throw on every tick.
+  const MAX_RESET_INTERVAL_MS = 200 * 365 * 24 * 3600 * 1000;
+
+  // One malformed record used to take down the whole dashboard, so every
+  // stored account goes through this before anything reads it. Returns
+  // null for records too broken to repair (those get dropped, not fatal).
+  function normalizeAccount(raw) {
+    if (!raw || typeof raw !== "object") return null;
+
+    // A platform we don't have code for can't be rendered or refreshed.
+    const meta = PLATFORMS[raw.platform];
+    if (!meta) return null;
+
+    const acc = {};
+    // Drop transient underscore keys; they must never survive a reload.
+    Object.keys(raw).forEach(k => { if (k.charAt(0) !== "_") acc[k] = raw[k]; });
+
+    acc.id = typeof acc.id === "string" && acc.id ? acc.id : uid();
+    acc.name = typeof acc.name === "string" && acc.name.trim() ? acc.name : "Untitled account";
+    acc.unit = typeof acc.unit === "string" ? acc.unit : "units";
+
+    // An unknown account type would silently miss the fetch dispatch and
+    // render as a live card that never updates — fall back to a real one.
+    const types = meta.accountTypes || [];
+    if (!types.some(t => t.value === acc.accountType)) {
+      acc.accountType = types.length ? types[0].value : "";
+    }
+
+    const limit = Number(acc.totalLimit);
+    acc.totalLimit = Number.isFinite(limit) && limit > 0 ? limit : 100;
+    const used = Number(acc.used);
+    acc.used = Number.isFinite(used) && used >= 0 ? used : 0;
+
+    const interval = Number(acc.resetIntervalMs);
+    acc.resetIntervalMs = Number.isFinite(interval) && interval >= 60000
+      ? Math.min(interval, MAX_RESET_INTERVAL_MS)
+      : 24 * 3600 * 1000;
+
+    const resetMs = Date.parse(acc.resetTime);
+    acc.resetTime = Number.isFinite(resetMs)
+      ? new Date(resetMs).toISOString()
+      : new Date(Date.now() + acc.resetIntervalMs).toISOString();
+
+    // Per-account direction override. Empty string means "inherit the
+    // account type's default" — anything unrecognized falls back to that.
+    if (acc.direction !== "growth" && acc.direction !== "depletion") acc.direction = "";
+
+    // v2 → v3: credentials moved from flat properties onto acc.creds.
+    // Existing saved credentials are carried across, not abandoned.
+    const creds = (acc.creds && typeof acc.creds === "object") ? acc.creds : {};
+    ALL_CRED_KEYS.forEach(k => {
+      if (typeof acc[k] === "string" && acc[k] !== "" && creds[k] === undefined) creds[k] = acc[k];
+      delete acc[k];
+    });
+    // v3 → v4: Home Assistant connection details moved to global settings
+    // and the entity key was renamed. Lift the first card's credentials up
+    // rather than making the user re-enter them.
+    if (acc.platform === "homeassistant") {
+      if (creds.haEntityId && !creds.entityId) creds.entityId = creds.haEntityId;
+      delete creds.haEntityId;
+      delete creds.haEndpoint;
+      if (creds.haBaseUrl && !settings.haBaseUrl) settings.haBaseUrl = creds.haBaseUrl;
+      if (creds.haToken && !settings.haToken) settings.haToken = creds.haToken;
+      delete creds.haBaseUrl;
+      delete creds.haToken;
+    }
+    acc.creds = creds;
+
+    // Control cards carry a state word instead of a number.
+    if (typeof acc.controlState !== "string") acc.controlState = "";
+    if (!acc.controlAttrs || typeof acc.controlAttrs !== "object") acc.controlAttrs = {};
+
+    acc.securityDetail = Array.isArray(acc.securityDetail)
+      ? acc.securityDetail.slice(0, 20).map(String)
+      : [];
+
+    acc.history = Array.isArray(acc.history)
+      ? acc.history
+          .filter(pt => pt && Number.isFinite(Number(pt.t)) && Number.isFinite(Number(pt.v)))
+          .map(pt => ({ t: Number(pt.t), v: Number(pt.v) }))
+          .slice(-HISTORY_MAX_POINTS)
+      : [];
+
+    if (acc.lastRefreshed != null && !Number.isFinite(Date.parse(acc.lastRefreshed))) acc.lastRefreshed = null;
+    if (acc.lastError != null && typeof acc.lastError !== "string") acc.lastError = null;
+
+    return acc;
+  }
+
+  function loadAccounts() {
+    try {
+      const raw = localStorage.getItem(STORAGE_ACCOUNTS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Two accepted shapes: a bare array (the original format) and the
+        // versioned envelope. The storage KEY intentionally never changes —
+        // bumping it would silently abandon saved credentials.
+        const list = Array.isArray(parsed) ? parsed
+          : (parsed && Array.isArray(parsed.accounts) ? parsed.accounts : null);
+        if (list) {
+          const normalized = list.map(normalizeAccount).filter(Boolean);
+          if (normalized.length) {
+            // Write the repaired list straight back so the migration is
+            // complete and deterministic — otherwise legacy-shaped data
+            // lingers until some unrelated action happens to persist.
+            saveAccounts(normalized);
+            return normalized;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Stored accounts unreadable, reseeding:", e);
+    }
+    const seeded = seedMockData().map(normalizeAccount).filter(Boolean);
+    saveAccounts(seeded);
+    return seeded;
+  }
+
+  function saveAccounts(list) {
+    try {
+      // Strip transient underscore keys (_refreshing, _resetDue) so an
+      // in-flight UI state can never be frozen into storage.
+      const clean = list.map(acc => {
+        const out = {};
+        Object.keys(acc).forEach(k => { if (k.charAt(0) !== "_") out[k] = acc[k]; });
+        return out;
+      });
+      localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify({ version: STORAGE_SCHEMA_VERSION, accounts: clean }));
+    } catch (e) {
+      console.warn("Could not save accounts:", e);
+    }
+  }
+
+  function loadLiveSim() {
+    return localStorage.getItem(STORAGE_LIVE_SIM) === "true";
+  }
+
+  function saveLiveSim(v) {
+    localStorage.setItem(STORAGE_LIVE_SIM, v ? "true" : "false");
+  }
+
+  function persist() {
+    saveAccounts(accounts);
+  }
+
+  // ---------------------------------------------------------------------
+  // Derived values
+  // ---------------------------------------------------------------------
+  function typeMetaFor(acc) {
+    const meta = PLATFORMS[acc.platform];
+    if (!meta) return null;
+    return (meta.accountTypes || []).find(t => t.value === acc.accountType) || null;
+  }
+
+  // Two kinds of number live on this dashboard and they mean opposite
+  // things:
+  //   depletion — a quota/budget being consumed. Healthy = lots LEFT.
+  //   growth    — progress toward a target. Healthy = close to the goal.
+  // Reading both as "% left" is what made YouTube at 96% of its
+  // subscriber goal render as a red "Exhausted" card.
+  //
+  // The account's own setting wins, so a Home Assistant "free disk"
+  // sensor and a "CPU temperature" sensor can coexist on one platform.
+  function directionFor(acc) {
+    if (acc.direction === "growth" || acc.direction === "depletion") return acc.direction;
+    const t = typeMetaFor(acc);
+    return (t && t.direction) || "depletion";
+  }
+
+  // "meter" draws the usual bar; "status" replaces it with a state word
+  // (Azure Resource Health has no meaningful percentage).
+  function displayModeFor(acc) {
+    const t = typeMetaFor(acc);
+    return (t && t.display) || "meter";
+  }
+
+  // Single source of truth for every number the card shows.
+  //   healthPct  — 0-100, high is always healthy, drives the badge
+  //   displayPct — what the hero prints (growth may exceed 100)
+  //   barPct     — clamped 0-100 for the meter width
+  function progressFor(acc) {
+    const total = Number(acc.totalLimit);
+    const used = Number(acc.used);
+    const direction = directionFor(acc);
+
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(used)) {
+      return { valid: false, direction, healthPct: 0, displayPct: 0, barPct: 0, suffix: "" };
+    }
+
+    const ratio = (used / total) * 100;
+
+    if (direction === "growth") {
+      const pct = Math.max(0, ratio);
+      return {
+        valid: true, direction,
+        healthPct: Math.min(100, pct),
+        displayPct: pct,               // deliberately uncapped: 142% is real information
+        barPct: Math.min(100, pct),
+        suffix: "of target"
+      };
+    }
+
+    const left = Math.max(0, Math.min(100, 100 - ratio));
+    return { valid: true, direction, healthPct: left, displayPct: left, barPct: left, suffix: "left" };
+  }
+
+  // Kept as a thin wrapper — several callers only want the health number.
+  function percentageLeft(acc) {
+    return progressFor(acc).healthPct;
+  }
+
+  function statusFor(acc) {
+    const p = progressFor(acc);
+    if (!p.valid) return "unknown";
+    if (p.direction === "growth") {
+      return p.displayPct >= 100 ? "reached" : "progress";
+    }
+    if (p.healthPct <= 5) return "exhausted";
+    if (p.healthPct <= 20) return "warning";
+    return "active";
+  }
+
+  // Trims trailing zeros without eating the digits of a whole number:
+  // "1.00" -> "1", "1.50" -> "1.5", "1.25" stays.
+  function trimDecimals(str) {
+    return str.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+  }
+
+  function formatNumber(n) {
+    n = Number(n);
+    if (!Number.isFinite(n)) return "—";
+    n = Math.round(n * 100) / 100;
+    const abs = Math.abs(n);
+    // Thresholds sit just below the round numbers so values that round
+    // UP across a boundary promote to the next unit — 999,999 formatted
+    // as "1000K" instead of "1M".
+    if (abs >= 999999500) return trimDecimals((n / 1e9).toFixed(2)) + "B";
+    if (abs >= 999950) return trimDecimals((n / 1e6).toFixed(2)) + "M";
+    if (abs >= 9999.5) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return n.toLocaleString();
+  }
+
+  function formatDuration(ms) {
+    if (ms <= 0) return "due now";
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${sec}s`;
+    return `${sec}s`;
+  }
+
+  function timeAgo(iso) {
+    if (!iso) return "never";
+    const ms = Date.now() - new Date(iso).getTime();
+    if (ms < 5000) return "just now";
+    return formatDuration(ms) + " ago";
+  }
+
+  // ---------------------------------------------------------------------
+  // Trend history.
+  //
+  // Only REAL readings are recorded: a successful live refresh, or a
+  // manual edit where you typed the number in yourself. The live-simulation
+  // jitter is deliberately excluded — a sparkline drawn from invented data
+  // would be exactly the kind of confident-looking fiction the last two
+  // milestones were spent removing.
+  // ---------------------------------------------------------------------
+  const HISTORY_MAX_POINTS = 60;
+  const HISTORY_MAX_AGE_MS = 90 * 24 * 3600 * 1000;
+
+  function recordReading(acc, value) {
+    const v = Number(value);
+    if (!Number.isFinite(v)) return;
+    if (!Array.isArray(acc.history)) acc.history = [];
+    const now = Date.now();
+    const last = acc.history[acc.history.length - 1];
+    // Collapse rapid repeat readings so hammering Refresh doesn't flatten
+    // the window into a single minute of noise.
+    if (last && now - last.t < 60000) { last.t = now; last.v = v; }
+    else acc.history.push({ t: now, v });
+    acc.history = acc.history.filter(pt => now - pt.t <= HISTORY_MAX_AGE_MS).slice(-HISTORY_MAX_POINTS);
+  }
+
+  function trendFor(acc) {
+    const h = Array.isArray(acc.history)
+      ? acc.history.filter(pt => pt && Number.isFinite(pt.t) && Number.isFinite(pt.v))
+      : [];
+    if (h.length < 2) return null;
+    const first = h[0], last = h[h.length - 1];
+    if (first.v === 0) return null;               // percentage change from zero is undefined
+    return {
+      points: h,
+      changePct: ((last.v - first.v) / Math.abs(first.v)) * 100,
+      spanMs: last.t - first.t
+    };
+  }
+
+  function spanLabel(ms) {
+    const days = ms / 86400000;
+    if (days >= 21) return "this month";
+    if (days >= 5) return "this week";
+    if (days >= 1) return "today";
+    const hours = ms / 3600000;
+    if (hours >= 1) return `${Math.round(hours)}h`;
+    return `${Math.max(1, Math.round(ms / 60000))}m`;
+  }
+
+  // Sparkline stays in the muted ink; only the signed delta carries colour,
+  // and the sign carries the direction too so it never depends on hue alone.
+  function trendHtml(acc, trend) {
+    if (!trend) return "";
+    const pts = trend.points.slice(-12);
+    if (pts.length < 2) return "";
+
+    const vals = pts.map(p => p.v);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = (max - min) || 1;
+    const W = 52, H = 14;
+    const path = pts.map((p, i) => {
+      const x = (i / (pts.length - 1)) * W;
+      const y = H - ((p.v - min) / range) * H;
+      return `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+
+    const flat = Math.abs(trend.changePct) < 0.05;
+    const rising = trend.changePct > 0;
+    // Whether "up" is good depends on what the card measures: more
+    // subscribers is good, more quota consumed is not.
+    const good = rising === (directionFor(acc) === "growth");
+    const color = flat ? "var(--text-muted)"
+      : (good ? "var(--status-good-text)" : "var(--status-critical-text)");
+    const label = `${rising ? "+" : ""}${trend.changePct.toFixed(Math.abs(trend.changePct) < 10 ? 1 : 0)}%`;
+    const period = spanLabel(trend.spanMs);
+
+    return `<span class="inline-flex items-center gap-1">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true" style="overflow:visible; flex:none">
+        <path d="${path}" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <span style="color:${color}">${escapeHtml(label)}</span>
+      <span style="color:var(--text-muted)">${escapeHtml(period)}</span>
+    </span>`;
+  }
+
+  // ---------------------------------------------------------------------
+  // Toasts
+  // ---------------------------------------------------------------------
+  function toast(message, kind) {
+    const container = document.getElementById("toastContainer");
+    const el = document.createElement("div");
+    const color = kind === "error" ? "var(--status-critical)" : kind === "success" ? "var(--status-good)" : "var(--text-secondary)";
+    el.className = "toast rounded-lg px-4 py-3 text-sm max-w-xs shadow-lg";
+    el.style.color = "var(--text-primary)";
+    el.style.borderLeft = `3px solid ${color}`;
+    // Toasts were completely silent to a screen reader. Errors interrupt;
+    // everything else waits for a pause.
+    el.setAttribute("role", kind === "error" ? "alert" : "status");
+    el.setAttribute("aria-live", kind === "error" ? "assertive" : "polite");
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 300); }, 4500);
+  }
+
+  // ---------------------------------------------------------------------
+  // Endpoint overrides exist so a changed API path can be worked around
+  // without editing code — but each request carries a live bearer token
+  // (GitHub PAT, Azure ARM token, Home Assistant admin token), so an
+  // arbitrary override would hand that token to any host typed into the
+  // box. Overrides are therefore constrained to the provider's own hosts.
+  //
+  // Relative overrides ("/v2/some/path") resolve against the default
+  // endpoint's origin, which is the common case anyway.
+  // ---------------------------------------------------------------------
+  function resolveEndpoint(override, defaultUrl, allowedHosts) {
+    const raw = (override || "").trim();
+    if (!raw) return defaultUrl;
+
+    let resolved;
+    try {
+      resolved = new URL(raw, defaultUrl);
+    } catch (e) {
+      throw new Error(`Endpoint override "${raw}" is not a valid URL.`);
+    }
+
+    const ok = allowedHosts.some(h => resolved.hostname === h || resolved.hostname.endsWith("." + h));
+    if (!ok) {
+      throw new Error(
+        `Endpoint override points at "${resolved.hostname}", which isn't one of this provider's hosts ` +
+        `(${allowedHosts.join(", ")}). Refusing to send credentials there.`
+      );
+    }
+    if (resolved.protocol !== "https:" && resolved.hostname !== "localhost" && !resolved.hostname.endsWith(".local")) {
+      throw new Error("Endpoint override must use https for a remote host.");
+    }
+    return resolved.toString();
+  }
+
+  // ---------------------------------------------------------------------
+  // Every provider shapes its errors differently, and several fetchers
+  // were discarding the useful part and reporting a bare status code.
+  // These two helpers keep the provider's own words.
+  // ---------------------------------------------------------------------
+  function extractApiMessage(j) {
+    if (!j || typeof j !== "object") return "";
+    if (typeof j.message === "string") return j.message;                       // GitHub, Discord
+    if (typeof j.error === "string") return j.error;                           // Finnhub
+    if (j.error && typeof j.error.message === "string") return j.error.message; // Azure, YouTube, Anthropic
+    if (Array.isArray(j.errors) && j.errors[0]) {                              // Cloudflare, Fitbit
+      const e0 = j.errors[0];
+      if (typeof e0 === "string") return e0;
+      if (typeof e0.message === "string") return e0.message;
+      if (typeof e0.errorType === "string") return e0.errorType;
+    }
+    return "";
+  }
+
+  async function httpFail(res, provider) {
+    let detail = "";
+    const body = await res.text().catch(() => "");
+    if (body) {
+      try { detail = extractApiMessage(JSON.parse(body)); }
+      catch (e) { detail = body.slice(0, 140); }
+    }
+    return new Error(`${provider} request failed (HTTP ${res.status})${detail ? ": " + detail : ""}`);
+  }
+
+  // ---------------------------------------------------------------------
+  // Security self-assessment, via the backend companion.
+  //
+  // The browser can't open raw sockets or complete a TLS handshake against
+  // an arbitrary host, so these all run server-side. The dashboard only
+  // ever names a check — targets live in the server's .env, so nothing
+  // here can point a scanner at something it shouldn't.
+  //
+  // Most of these are "0 is healthy" metrics, which is exactly what the
+  // depletion direction already expresses: nothing found = full bar.
+  // ---------------------------------------------------------------------
+  async function fetchSecurityCheck(acc, checkName) {
+    const res = await backendRequest(`/security/${encodeURIComponent(checkName)}`);
+    const data = await res.json().catch(() => null);
+    if (!data) throw new Error("Backend returned an unreadable security result.");
+    if (data.error) throw new Error(data.error);
+    if (!Number.isFinite(Number(data.value))) throw new Error("Security check returned no numeric result.");
+
+    // The detail lines are the actually useful part — which host is the
+    // problem, not just how many problems there are.
+    const detail = Array.isArray(data.detail) ? data.detail : [];
+    return {
+      totalLimit: acc.totalLimit,
+      used: Number(data.value),
+      resetTime: acc.resetTime,
+      securityDetail: detail
+    };
+  }
+
+  // Declarations, not `const` arrows: PLATFORMS is a const initialised
+  // earlier in the file and references these by name. Function declarations
+  // hoist; a const arrow would still be in its temporal dead zone, and the
+  // whole script would abort before `init` was ever registered.
+  function fetchTlsExpiry(acc)   { return fetchSecurityCheck(acc, "tls-expiry"); }
+  function fetchPortDrift(acc)   { return fetchSecurityCheck(acc, "port-drift"); }
+  function fetchHttpHeaders(acc) { return fetchSecurityCheck(acc, "http-headers"); }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: OpenAI, through the backend companion.
+  //
+  // This is the one provider the browser genuinely cannot reach — OpenAI
+  // serves no CORS headers by design. The backend holds the API key and
+  // forwards the request, so the key never enters this page.
+  // ---------------------------------------------------------------------
+  async function fetchOpenAiUsage(acc) {
+    const days = Math.max(1, Math.min(365, Number(acc.openaiDays) || 30));
+    const startTime = Math.floor(Date.now() / 1000) - days * 86400;
+    // The costs endpoint buckets by day; one bucket per day over the window.
+    const res = await backendRequest(
+      `/proxy/openai/v1/organization/costs?start_time=${startTime}&limit=${days}`
+    );
+    const data = await res.json().catch(() => null);
+    if (!data) throw new Error("OpenAI returned an unreadable response via the backend.");
+    if (data.error) throw new Error(`OpenAI: ${data.error.message || "request failed"}`);
+
+    const buckets = Array.isArray(data.data) ? data.data : [];
+    if (!buckets.length) {
+      throw new Error("OpenAI returned no cost data for this window — numbers left unchanged. An org-scoped admin key is required for the costs endpoint.");
+    }
+    // Each bucket holds results[] with amount.value in USD.
+    const total = buckets.reduce((sum, b) =>
+      sum + (Array.isArray(b.results) ? b.results : []).reduce((s, r) =>
+        s + Number((r.amount && r.amount.value) || 0), 0), 0);
+
+    return { totalLimit: acc.totalLimit, used: total, resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Anthropic (Claude API keys)
+  // ---------------------------------------------------------------------
+  async function fetchClaudeUsage(acc) {
+    if (!acc.apiKey) throw new Error("No Anthropic API key saved for this account. Edit the account to add one.");
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": acc.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1,
+        messages: [{ role: "user", content: "hi" }]
+      })
+    });
+
+    const limitHeader = res.headers.get("anthropic-ratelimit-tokens-limit");
+    const remainingHeader = res.headers.get("anthropic-ratelimit-tokens-remaining");
+    const resetHeader = res.headers.get("anthropic-ratelimit-tokens-reset");
+
+    if (limitHeader === null || remainingHeader === null) {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try { const body = await res.json(); msg = (body && body.error && body.error.message) || msg; } catch (e) {}
+        throw new Error(`Anthropic request failed: ${msg}`);
+      }
+      throw new Error("Anthropic responded but didn't expose rate-limit headers to this browser request (CORS Access-Control-Expose-Headers). Numbers left unchanged.");
+    }
+
+    const limit = Number(limitHeader);
+    const remaining = Number(remainingHeader);
+    return {
+      totalLimit: limit,
+      used: Math.max(0, limit - remaining),
+      resetTime: resetHeader ? new Date(resetHeader).toISOString() : acc.resetTime
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: GitHub Copilot (individual or org-admin) via the AI
+  // Credits billing/usage API GitHub introduced June 2026. This reports
+  // *spend*, not a plan limit, so totalLimit stays whatever the account
+  // is manually configured with (e.g. $200 for Max) and only "used" is
+  // overwritten. GitHub's docs are ambiguous on whether a personal
+  // (non-org) account can call this for itself — a 403 here is itself
+  // useful signal, and the endpoint field lets you try an alternate path
+  // without touching code.
+  // ---------------------------------------------------------------------
+  async function fetchCopilotUsage(acc) {
+    if (!acc.githubToken) throw new Error("A GitHub token is required. Edit the account to add one.");
+    let defaultUrl;
+    if (acc.accountType === "org-admin") {
+      if (!acc.orgLogin) throw new Error("Org login is required. Edit the account to add one.");
+      defaultUrl = `https://api.github.com/organizations/${encodeURIComponent(acc.orgLogin)}/settings/billing/ai_credit/usage`;
+    } else {
+      if (!acc.githubUsername) throw new Error("GitHub username is required. Edit the account to add one.");
+      defaultUrl = `https://api.github.com/users/${encodeURIComponent(acc.githubUsername)}/settings/billing/ai_credit/usage`;
+    }
+    const url = resolveEndpoint(acc.copilotEndpoint, defaultUrl, ["api.github.com"]);
+    const res = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${acc.githubToken}`,
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      }
+    });
+    if (!res.ok) throw await httpFail(res, "GitHub");
+    const data = await res.json();
+    const items = data.usageItems || [];
+    const spend = items
+      .filter(it => String(it.product || "").toLowerCase().includes("copilot"))
+      .reduce((sum, it) => sum + (Number(it.netAmount) || 0), 0);
+    return { totalLimit: acc.totalLimit, used: spend, resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Hand-rolled OAuth popup, for providers with no MSAL-equivalent library
+  // (Twitch, Fitbit). Same http(s)-origin requirement as Azure: an OAuth
+  // provider cannot redirect back to a file:// URL, so all of this is
+  // inert when the page is opened by double-clicking.
+  //
+  // The popup lands back on THIS page carrying the OAuth response; the
+  // handler below detects that, hands the values to the opener, and
+  // closes itself. Tokens are kept only in this browser.
+  // ---------------------------------------------------------------------
+  const OAUTH_CHANNEL = "limitDashboard.oauth";
+
+  // Runs on every page load. When this load is the popup coming back from
+  // a provider, it is not a dashboard render at all — just a courier.
+  function handleOAuthRedirectIfPopup() {
+    if (!window.opener || window.opener === window) return false;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const query = new URLSearchParams(window.location.search);
+    const payload = {
+      channel: OAUTH_CHANNEL,
+      accessToken: hash.get("access_token"),
+      code: query.get("code"),
+      state: hash.get("state") || query.get("state"),
+      error: hash.get("error_description") || hash.get("error") || query.get("error_description") || query.get("error")
+    };
+    if (!payload.accessToken && !payload.code && !payload.error) return false;
+    try { window.opener.postMessage(payload, window.location.origin); } catch (e) { /* opener gone */ }
+    document.body.innerHTML = '<p style="font-family:system-ui;padding:2rem;color:#c3c2b7">Sign-in complete — you can close this window.</p>';
+    window.close();
+    return true;
+  }
+
+  function openOAuthPopup(authUrl, expectedState) {
+    return new Promise((resolve, reject) => {
+      if (window.location.protocol === "file:") {
+        reject(new Error("OAuth needs an http(s) origin — serve this file with a local static server instead of opening it directly."));
+        return;
+      }
+      const popup = window.open(authUrl, "oauthPopup", "width=520,height=680");
+      if (!popup) {
+        reject(new Error("Popup blocked — allow popups for this page and try again."));
+        return;
+      }
+      let settled = false;
+      function cleanup() { settled = true; window.removeEventListener("message", onMessage); clearInterval(closedTimer); }
+      function onMessage(event) {
+        if (event.origin !== window.location.origin) return;
+        const d = event.data;
+        if (!d || d.channel !== OAUTH_CHANNEL) return;
+        // A response with NO state must not pass when one was expected —
+        // the old `d.state &&` short-circuit let it through, making the
+        // check skippable by simply omitting the parameter.
+        if (expectedState && d.state !== expectedState) {
+          cleanup();
+          reject(new Error("Sign-in response did not match this request (state mismatch). Please try again."));
+          return;
+        }
+        cleanup();
+        if (d.error) reject(new Error(d.error));
+        else resolve(d);
+      }
+      window.addEventListener("message", onMessage);
+      // The popup being closed by hand should not leave the promise
+      // pending. The grace period matters: the popup closes itself right
+      // after postMessage, and without it that race reported a successful
+      // sign-in as "window was closed".
+      let closedSince = 0;
+      const closedTimer = setInterval(() => {
+        if (settled) return;
+        if (!popup.closed) { closedSince = 0; return; }
+        if (!closedSince) { closedSince = Date.now(); return; }
+        if (Date.now() - closedSince >= 600) {
+          cleanup();
+          reject(new Error("Sign-in window was closed before finishing."));
+        }
+      }, 200);
+    });
+  }
+
+  function randomUrlSafeString(bytes) {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return btoa(String.fromCharCode(...arr)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  async function pkceChallengeFrom(verifier) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+    return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  // Twitch: implicit flow — Twitch hands back a token directly, no
+  // exchange step and no secret. moderator:read:followers is what makes
+  // the total follower count readable for your own channel.
+  async function connectTwitchAccount(clientId) {
+    if (!clientId) throw new Error("Enter your Twitch Client ID first.");
+    const state = randomUrlSafeString(16);
+    const url = "https://id.twitch.tv/oauth2/authorize"
+      + `?client_id=${encodeURIComponent(clientId)}`
+      + `&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`
+      + "&response_type=token"
+      + `&scope=${encodeURIComponent("moderator:read:followers")}`
+      + `&state=${encodeURIComponent(state)}`;
+    const result = await openOAuthPopup(url, state);
+    if (!result.accessToken) throw new Error("Twitch returned no access token.");
+    return result.accessToken;
+  }
+
+  // Fitbit: authorization-code + PKCE. The code exchange is a real POST
+  // to Fitbit's token endpoint, which was confirmed browser-callable.
+  async function connectFitbitAccount(clientId) {
+    if (!clientId) throw new Error("Enter your Fitbit Client ID first.");
+    const state = randomUrlSafeString(16);
+    const verifier = randomUrlSafeString(48);
+    const challenge = await pkceChallengeFrom(verifier);
+    const redirectUri = window.location.origin + window.location.pathname;
+    const url = "https://www.fitbit.com/oauth2/authorize"
+      + `?client_id=${encodeURIComponent(clientId)}`
+      + "&response_type=code"
+      + `&code_challenge=${encodeURIComponent(challenge)}`
+      + "&code_challenge_method=S256"
+      + `&scope=${encodeURIComponent("activity heartrate sleep")}`
+      + `&redirect_uri=${encodeURIComponent(redirectUri)}`
+      + `&state=${encodeURIComponent(state)}`;
+    const result = await openOAuthPopup(url, state);
+    if (!result.code) throw new Error("Fitbit returned no authorization code.");
+    const body = new URLSearchParams({
+      client_id: clientId,
+      grant_type: "authorization_code",
+      code: result.code,
+      code_verifier: verifier,
+      redirect_uri: redirectUri
+    });
+    const res = await fetch("https://api.fitbit.com/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.access_token) {
+      const msg = (data && data.errors && data.errors[0] && data.errors[0].message) || `HTTP ${res.status}`;
+      throw new Error(`Fitbit token exchange failed: ${msg}`);
+    }
+    return data.access_token;
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Azure Cost Management, via MSAL.js public-client OAuth.
+  // No backend secret is involved — this is Microsoft's own supported SPA
+  // pattern — but the OAuth redirect requires an http(s) origin, so it
+  // silently cannot work when this file is opened as file://. "Connect"
+  // (a real user click, tolerant of the login popup) is kept separate
+  // from "Refresh" (silent-only) so popup-blocking never surfaces as a
+  // confusing failure deep inside a refresh call.
+  // ---------------------------------------------------------------------
+  const msalApps = {};
+
+  async function getMsalApp(tenantId, clientId) {
+    const key = `${tenantId}:${clientId}`;
+    if (!msalApps[key]) {
+      const app = new msal.PublicClientApplication({
+        auth: { clientId, authority: `https://login.microsoftonline.com/${tenantId}`, redirectUri: window.location.origin }
+      });
+      await app.initialize();
+      msalApps[key] = app;
+    }
+    return msalApps[key];
+  }
+
+  async function connectAzureAccount(tenantId, clientId) {
+    if (window.location.protocol === "file:") {
+      throw new Error("Microsoft sign-in needs an http(s) origin — serve this file with a local static server instead of opening it directly, then try again.");
+    }
+    if (!tenantId || !clientId) throw new Error("Enter your Azure AD Tenant ID and Client ID first.");
+    const app = await getMsalApp(tenantId, clientId);
+    const result = await app.loginPopup({ scopes: ["https://management.azure.com/user_impersonation"] });
+    return result.account.username;
+  }
+
+  async function getAzureTokenSilent(acc) {
+    if (!acc.azureTenantId || !acc.azureClientId) throw new Error("Azure AD Tenant ID and Client ID are required. Edit the account to add them.");
+    const app = await getMsalApp(acc.azureTenantId, acc.azureClientId);
+    const existing = app.getAllAccounts();
+    if (existing.length === 0) throw new Error("Not signed in yet — click \"Connect Microsoft Account\" on this account first.");
+    const result = await app.acquireTokenSilent({ scopes: ["https://management.azure.com/user_impersonation"], account: existing[0] });
+    return result.accessToken;
+  }
+
+  async function fetchAzureCost(acc) {
+    if (!acc.subscriptionId) throw new Error("Azure subscription ID is required. Edit the account to add it.");
+    const token = await getAzureTokenSilent(acc);
+    const url = `https://management.azure.com/subscriptions/${encodeURIComponent(acc.subscriptionId)}/providers/Microsoft.CostManagement/query?api-version=2023-11-01`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "ActualCost",
+        timeframe: "MonthToDate",
+        dataset: { granularity: "None", aggregation: { totalCost: { name: "Cost", function: "Sum" } } }
+      })
+    });
+    if (!res.ok) throw await httpFail(res, "Azure");
+    const data = await res.json();
+    const rows = (data.properties && data.properties.rows) || [];
+    // An empty result set is NOT "$0 spent" — it usually means the query
+    // matched nothing (wrong subscription, no billing scope, cost data
+    // not yet materialized). Reporting zero here quietly overwrote a real
+    // spend figure with a healthy-looking one.
+    if (!rows.length) {
+      throw new Error("Azure returned no cost rows for this subscription — numbers left unchanged. Check the subscription ID and that your account has Cost Management access.");
+    }
+    return { totalLimit: acc.totalLimit, used: Number(rows[0][0]), resetTime: acc.resetTime };
+  }
+
+  // Quota: unlike cost, this returns a REAL limit alongside real usage in
+  // one call — no manually-set "budget" involved. Matches by partial,
+  // case-insensitive name since the usages API returns a whole list of
+  // quota items per provider/location and different providers use
+  // different API versions, hence the endpoint override escape hatch.
+  async function fetchAzureQuota(acc) {
+    if (!acc.subscriptionId) throw new Error("Azure subscription ID is required. Edit the account to add it.");
+    if (!acc.azureQuotaItem) throw new Error("Quota item name is required (e.g. \"Total Regional vCPUs\"). Edit the account to add it.");
+    const token = await getAzureTokenSilent(acc);
+    const provider = acc.azureResourceProvider || "Microsoft.Compute";
+    const location = acc.azureLocation || "eastus";
+    const url = resolveEndpoint(
+      acc.azureEndpoint,
+      `https://management.azure.com/subscriptions/${encodeURIComponent(acc.subscriptionId)}/providers/${encodeURIComponent(provider)}/locations/${encodeURIComponent(location)}/usages?api-version=2024-07-01`,
+      ["management.azure.com"]
+    );
+    const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+    if (!res.ok) throw await httpFail(res, "Azure");
+    const data = await res.json();
+    const items = data.value || [];
+    const needle = acc.azureQuotaItem.toLowerCase();
+    const match = items.find(it => {
+      const n = it.name || {};
+      return (n.localizedValue || "").toLowerCase().includes(needle) || (n.value || "").toLowerCase().includes(needle);
+    });
+    if (!match) throw new Error(`No quota item matching "${acc.azureQuotaItem}" among ${items.length} returned. Check the resource provider/location, or try the endpoint override.`);
+    return { totalLimit: Number(match.limit), used: Number(match.currentValue), resetTime: acc.resetTime };
+  }
+
+  // Health has no real "limit" — Resource Health reports a status, not a
+  // number — so Available/Degraded/Unavailable/Unknown are mapped onto
+  // the same 0-100 scale everything else uses, and the real state text
+  // replaces the unit label each refresh so the card still reads clearly.
+  const AZURE_HEALTH_TO_USED = { Available: 0, Degraded: 70, Unavailable: 100, Unknown: 60 };
+
+  async function fetchAzureHealth(acc) {
+    if (!acc.azureResourceId) throw new Error("Azure resource ID is required. Edit the account to add it.");
+    const token = await getAzureTokenSilent(acc);
+    const url = resolveEndpoint(
+      acc.azureEndpoint,
+      `https://management.azure.com${acc.azureResourceId}/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2022-10-01`,
+      ["management.azure.com"]
+    );
+    const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+    if (!res.ok) throw await httpFail(res, "Azure");
+    const data = await res.json();
+    const state = (data.properties && data.properties.availabilityState) || "Unknown";
+    const used = Object.prototype.hasOwnProperty.call(AZURE_HEALTH_TO_USED, state) ? AZURE_HEALTH_TO_USED[state] : AZURE_HEALTH_TO_USED.Unknown;
+    return { totalLimit: 100, used, resetTime: acc.resetTime, unit: state };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Cloudflare zone traffic, via the GraphQL Analytics API.
+  // Confirmed live during testing that api.cloudflare.com answers browser
+  // requests directly (no CORS block). Cloudflare reports traffic, not a
+  // hard limit — plans don't generally cap requests — so "Total limit" is
+  // a budget you set yourself, same pattern as Azure cost.
+  // ---------------------------------------------------------------------
+  async function fetchCloudflareUsage(acc) {
+    if (!acc.cloudflareToken) throw new Error("A Cloudflare API token is required. Edit the account to add one.");
+    if (!acc.zoneId) throw new Error("A Cloudflare Zone ID is required. Edit the account to add it.");
+    const now = new Date();
+    const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+    const until = now.toISOString().slice(0, 10);
+    const query = `query ($zoneTag: String!, $since: Date!, $until: Date!) {
+      viewer {
+        zones(filter: { zoneTag: $zoneTag }) {
+          httpRequests1dGroups(filter: { date_geq: $since, date_leq: $until }, limit: 31) {
+            sum { requests }
+          }
+        }
+      }
+    }`;
+    const res = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${acc.cloudflareToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { zoneTag: acc.zoneId, since, until } })
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || (data.errors && data.errors.length)) {
+      const msg = (data && data.errors && data.errors[0] && data.errors[0].message) || `HTTP ${res.status}`;
+      throw new Error(`Cloudflare request failed: ${msg}`);
+    }
+    const zones = data.data && data.data.viewer && data.data.viewer.zones;
+    const groups = (zones && zones[0] && zones[0].httpRequests1dGroups) || [];
+    const requests = groups.reduce((sum, g) => sum + ((g.sum && g.sum.requests) || 0), 0);
+    return { totalLimit: acc.totalLimit, used: requests, resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Investments (crypto via CoinGecko, stocks via Finnhub).
+  // No brokerage login — you supply the quantity held, Refresh supplies a
+  // real live price. Both confirmed CORS-open during testing.
+  // ---------------------------------------------------------------------
+  async function fetchCryptoValue(acc) {
+    if (!acc.investmentSymbol) throw new Error("A CoinGecko coin id is required (e.g. \"bitcoin\", \"ethereum\" — not the ticker). Edit the account to add one.");
+    if (!acc.investmentQuantity) throw new Error("Quantity held is required. Edit the account to add it.");
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(acc.investmentSymbol)}&vs_currencies=usd`);
+    if (!res.ok) throw await httpFail(res, "CoinGecko");
+    const data = await res.json();
+    const price = data[acc.investmentSymbol] && data[acc.investmentSymbol].usd;
+    if (price === undefined) throw new Error(`CoinGecko didn't recognize coin id "${acc.investmentSymbol}" — use its API id (e.g. "bitcoin"), not the ticker (e.g. not "BTC").`);
+    return { totalLimit: acc.totalLimit, used: price * Number(acc.investmentQuantity), resetTime: acc.resetTime };
+  }
+
+  async function fetchStockValue(acc) {
+    if (!acc.investmentToken) throw new Error("A Finnhub API key is required. Edit the account to add one.");
+    if (!acc.investmentSymbol) throw new Error("A stock ticker is required. Edit the account to add it.");
+    if (!acc.investmentQuantity) throw new Error("Quantity held is required. Edit the account to add it.");
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(acc.investmentSymbol)}&token=${encodeURIComponent(acc.investmentToken)}`);
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.error) throw new Error(`Finnhub request failed: ${(data && data.error) || `HTTP ${res.status}`}`);
+    if (!data.c) throw new Error(`Finnhub returned no price for "${acc.investmentSymbol}" — check the ticker.`);
+    return { totalLimit: acc.totalLimit, used: data.c * Number(acc.investmentQuantity), resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Social / Content (YouTube subscribers, GitHub stars).
+  // ---------------------------------------------------------------------
+  async function fetchYoutubeStats(acc) {
+    if (!acc.youtubeApiKey) throw new Error("A YouTube Data API key is required. Edit the account to add one.");
+    if (!acc.youtubeChannelId) throw new Error("A YouTube channel ID is required. Edit the account to add it.");
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${encodeURIComponent(acc.youtubeChannelId)}&key=${encodeURIComponent(acc.youtubeApiKey)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) throw new Error(`YouTube request failed: ${(data && data.error && data.error.message) || `HTTP ${res.status}`}`);
+    const item = data.items && data.items[0];
+    if (!item) throw new Error(`YouTube returned no channel for id "${acc.youtubeChannelId}" — double-check the channel ID (starts with "UC").`);
+    return { totalLimit: acc.totalLimit, used: Number(item.statistics.subscriberCount), resetTime: acc.resetTime };
+  }
+
+  async function fetchGithubRepoStars(acc) {
+    if (!acc.githubRepo || !acc.githubRepo.includes("/")) throw new Error("A GitHub repo is required, as \"owner/repo\". Edit the account to add it.");
+    const headers = { "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    if (acc.githubToken) headers["Authorization"] = `Bearer ${acc.githubToken}`;
+    const res = await fetch(`https://api.github.com/repos/${acc.githubRepo}`, { headers });
+    if (!res.ok) throw await httpFail(res, "GitHub");
+    const data = await res.json();
+    return { totalLimit: acc.totalLimit, used: Number(data.stargazers_count), resetTime: acc.resetTime };
+  }
+
+  async function fetchDiscordStats(acc) {
+    if (!acc.discordGuildId) throw new Error("A Discord server (guild) ID is required. Edit the account to add it.");
+    const res = await fetch(`https://discord.com/api/guilds/${encodeURIComponent(acc.discordGuildId)}/widget.json`);
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.message) {
+      const msg = (data && data.message) || `HTTP ${res.status}`;
+      throw new Error(`Discord request failed: ${msg}. Make sure Server Settings → Widget → Enable Server Widget is turned on for this server.`);
+    }
+    return { totalLimit: acc.totalLimit, used: Number(data.presence_count), resetTime: acc.resetTime };
+  }
+
+  // Two calls: login -> broadcaster id, then id -> follower total. The
+  // token is short-lived by design; an expired one surfaces as a clear
+  // "reconnect" message rather than a bare 401.
+  async function fetchTwitchFollowers(acc) {
+    if (!acc.twitchClientId) throw new Error("A Twitch Client ID is required. Edit the account to add it.");
+    if (!acc.twitchToken) throw new Error("Not signed in yet — click \"Connect Twitch\" on this account first.");
+    if (!acc.twitchLogin) throw new Error("A Twitch channel login (username) is required. Edit the account to add it.");
+    const headers = { "Client-Id": acc.twitchClientId, "Authorization": `Bearer ${acc.twitchToken}` };
+    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(acc.twitchLogin)}`, { headers });
+    if (userRes.status === 401) throw new Error("Twitch token expired or invalid — click \"Connect Twitch\" again.");
+    if (!userRes.ok) throw await httpFail(userRes, "Twitch");
+    const userData = await userRes.json();
+    const user = userData.data && userData.data[0];
+    if (!user) throw new Error(`Twitch has no channel named "${acc.twitchLogin}".`);
+    const followRes = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${encodeURIComponent(user.id)}`, { headers });
+    if (!followRes.ok) {
+      let msg = `HTTP ${followRes.status}`;
+      try { const b = await followRes.json(); msg = b.message || msg; } catch (e) {}
+      throw new Error(`Twitch follower request failed: ${msg}. Reading a total follower count requires signing in as that channel (moderator:read:followers).`);
+    }
+    const followData = await followRes.json();
+    return { totalLimit: acc.totalLimit, used: Number(followData.total), resetTime: acc.resetTime };
+  }
+
+  // Fitbit daily activity summary. Which number lands on the card is
+  // chosen per-account (steps / calories / distance / floors).
+  async function fetchFitbitActivity(acc) {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const url = `https://api.fitbit.com/1/user/-/activities/date/${dateStr}.json`;
+    const call = token => fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+
+    let token = acc.fitbitToken;
+    // With a backend configured we can mint a token even if none is stored,
+    // so a first-ever refresh works without doing the popup flow at all.
+    if (!token && !backendConfigured()) {
+      throw new Error("Not signed in yet — click \"Connect Fitbit\" on this account first, or configure the backend companion to skip the 8-hour re-connects.");
+    }
+
+    let res = token ? await call(token) : { status: 401 };
+
+    // Fitbit access tokens last ~8 hours. Rather than making that the
+    // user's problem, ask the backend for a fresh one and retry once.
+    if (res.status === 401) {
+      if (!backendConfigured()) {
+        throw new Error("Fitbit token expired (they last ~8 hours) — click \"Connect Fitbit\" again, or set up the backend companion so this refreshes itself.");
+      }
+      token = await backendRefreshToken("fitbit");
+      persistFitbitToken(acc.id, token);
+      res = await call(token);
+      if (res.status === 401) throw new Error("Fitbit still rejected the refreshed token — check FITBIT_REFRESH_TOKEN in the server's .env.");
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) {
+      const msg = (data && data.errors && data.errors[0] && data.errors[0].message) || `HTTP ${res.status}`;
+      throw new Error(`Fitbit request failed: ${msg}`);
+    }
+    const summary = data.summary || {};
+    const metric = acc.fitbitMetric || "steps";
+    const value = metric === "distance"
+      ? ((summary.distances || []).find(d => d.activity === "total") || {}).distance
+      : summary[metric];
+    if (value === undefined || value === null) throw new Error(`Fitbit returned no "${metric}" value for today.`);
+    return { totalLimit: acc.totalLimit, used: Number(value), resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Home Assistant sensor state.
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+  // Home Assistant plumbing.
+  //
+  // The base URL and token are a SINGLE global setting rather than fields
+  // on each card: an entity browser has to talk to HA before any card
+  // exists, and re-typing a long-lived admin token into twenty cards
+  // would be miserable. Cards carry only an entity id.
+  //
+  // Everything else in the dashboard stays independent of this — the app
+  // is fully usable with no Home Assistant at all.
+  // ---------------------------------------------------------------------
+  function haConfig() {
+    return {
+      baseUrl: String(settings.haBaseUrl || "").replace(/\/+$/, ""),
+      token: String(settings.haToken || "")
+    };
+  }
+
+  function haConfigured() {
+    const c = haConfig();
+    return !!(c.baseUrl && c.token);
+  }
+
+  async function haRequest(path, options) {
+    const { baseUrl, token } = haConfig();
+    if (!baseUrl || !token) {
+      throw new Error("Home Assistant isn't connected yet — open Settings and add your base URL and long-lived token.");
+    }
+    try { new URL(baseUrl); }
+    catch (e) { throw new Error(`Home Assistant base URL "${baseUrl}" isn't a valid URL (include http:// or https://).`); }
+
+    const opts = Object.assign({}, options);
+    opts.headers = Object.assign({
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    }, opts.headers || {});
+
+    let res;
+    try {
+      res = await fetch(baseUrl + path, opts);
+    } catch (e) {
+      // A browser reports "blocked by CORS" and "host unreachable" the
+      // same way, so name both rather than guessing.
+      throw new Error(`Could not reach Home Assistant at ${baseUrl} — check it's running, and that this page's origin is listed under http: cors_allowed_origins in configuration.yaml.`);
+    }
+    if (res.status === 401) throw new Error("Home Assistant rejected the token (401) — create a new long-lived access token and paste it into Settings.");
+    if (!res.ok) throw await httpFail(res, "Home Assistant");
+    return res;
+  }
+
+  async function haFetchState(entityId) {
+    const res = await haRequest(`/api/states/${encodeURIComponent(entityId)}`);
+    return res.json();
+  }
+
+  async function haListStates() {
+    const res = await haRequest("/api/states");
+    const list = await res.json();
+    if (!Array.isArray(list)) throw new Error("Home Assistant returned an unexpected response for /api/states.");
+    return list;
+  }
+
+  async function haCallService(domain, service, data) {
+    await haRequest(`/api/services/${encodeURIComponent(domain)}/${encodeURIComponent(service)}`, {
+      method: "POST",
+      body: JSON.stringify(data || {})
+    });
+  }
+
+  function entityDomain(entityId) {
+    return String(entityId || "").split(".")[0] || "";
+  }
+
+  function friendlyState(st) {
+    if (!st) return "Unknown";
+    const raw = String(st.state == null ? "" : st.state);
+    if (!raw) return "Unknown";
+    return raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, " ");
+  }
+
+  // Entity states are words, not numbers, so they get their own mapping
+  // onto the badge vocabulary. "Off" is deliberately neutral rather than
+  // red — a light being off is not a fault.
+  const HA_STATE_STATUS = {
+    on: "active", open: "active", home: "active", playing: "active",
+    unlocked: "warning", detected: "warning",
+    off: "progress", closed: "progress", idle: "progress", paused: "progress",
+    standby: "progress", locked: "progress", not_home: "progress", away: "progress",
+    unavailable: "unknown", unknown: "unknown", none: "unknown"
+  };
+
+  function haStatusFor(stateWord) {
+    return HA_STATE_STATUS[String(stateWord || "").toLowerCase()] || "progress";
+  }
+
+  async function fetchHomeAssistantSensor(acc) {
+    if (!acc.entityId) throw new Error("Pick an entity first — open Edit and use Browse.");
+    const data = await haFetchState(acc.entityId);
+    const value = Number(data.state);
+    if (!Number.isFinite(value)) {
+      throw new Error(`Entity "${acc.entityId}" reports "${data.state}", which isn't a number. Use a Control or Status card for non-numeric entities.`);
+    }
+    return { totalLimit: acc.totalLimit, used: value, resetTime: acc.resetTime };
+  }
+
+  // Control cards report a state word rather than a number; refreshAccount
+  // recognises `controlState` and takes a separate path.
+  async function fetchHaEntityState(acc) {
+    if (!acc.entityId) throw new Error("Pick an entity first — open Edit and use Browse.");
+    const data = await haFetchState(acc.entityId);
+    return {
+      controlState: String(data.state == null ? "unknown" : data.state),
+      controlAttrs: data.attributes || {}
+    };
+  }
+
+  // The snapshot endpoint needs the auth header, so the image can't just
+  // be an <img src> — that would also put a long-lived token in a URL.
+  // Fetch it and hand the card an object URL instead.
+  async function loadCameraSnapshot(acc) {
+    const entityId = (acc.creds && acc.creds.entityId) || "";
+    if (!entityId) throw new Error("Pick a camera entity first — open Edit and use Browse.");
+    const res = await haRequest(`/api/camera_proxy/${encodeURIComponent(entityId)}`);
+    const blob = await res.blob();
+    if (acc._cameraUrl) URL.revokeObjectURL(acc._cameraUrl);
+    acc._cameraUrl = URL.createObjectURL(blob);
+  }
+
+  // Runs one button on a control card, then re-reads the entity so the
+  // card can never sit showing the pre-action state. This is what makes
+  // polling acceptable for controls: the card you just touched is always
+  // current, even if entities changed elsewhere lag by a few seconds.
+  async function runControlAction(id, index) {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc || acc._acting) return;
+    const action = controlActionsFor(acc)[index];
+    if (!action) return;
+    if (action.confirm && !confirm(action.confirm)) return;
+
+    acc._acting = true;
+    render();
+    try {
+      await action.run();
+      // Home Assistant applies the service call asynchronously; reading
+      // back instantly often still returns the previous state.
+      await new Promise(r => setTimeout(r, 400));
+
+      const type = typeMetaFor(acc);
+      if (type && typeof type.fetch === "function") {
+        const result = await type.fetch(credView(acc));
+        const target = accounts.find(a => a.id === id);
+        if (target && result && typeof result.controlState === "string") {
+          target.controlState = result.controlState;
+          target.controlAttrs = result.controlAttrs || {};
+          if (displayModeFor(target) === "camera") await loadCameraSnapshot(target);
+        }
+      }
+      const done = accounts.find(a => a.id === id);
+      if (done) { done.lastError = null; done.lastRefreshed = new Date().toISOString(); }
+      toast(`${acc.name}: ${action.label}`, "success");
+    } catch (err) {
+      const failed = accounts.find(a => a.id === id) || acc;
+      failed.lastError = err.message || String(err);
+      toast(`${acc.name}: ${failed.lastError}`, "error");
+    } finally {
+      acc._acting = false;
+      const live = accounts.find(a => a.id === id);
+      if (live) live._acting = false;
+      persist();
+      render();
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Real refresh: Home Lab generic JSON metric — see the platform note for
+  // why this is one flexible tool instead of dedicated Pi-hole/Frigate/
+  // UniFi integrations. Supports a dot/bracket path like "a.b[0].c".
+  // ---------------------------------------------------------------------
+  function extractJsonPath(obj, path) {
+    const parts = path.split(/\.|\[|\]/).filter(Boolean);
+    let cur = obj;
+    for (const part of parts) {
+      if (cur === undefined || cur === null) return undefined;
+      cur = cur[part];
+    }
+    return cur;
+  }
+
+  async function fetchHomeLabMetric(acc) {
+    if (!acc.homelabUrl) throw new Error("A URL is required. Edit the account to add it.");
+    if (!acc.homelabPath) throw new Error("A JSON field path is required (e.g. \"dns_queries_today\"). Edit the account to add it.");
+    const headers = {};
+    if (acc.homelabAuthHeader && acc.homelabAuthValue) headers[acc.homelabAuthHeader] = acc.homelabAuthValue;
+    // This is the most misconfiguration-prone platform in the file — an
+    // arbitrary URL, arbitrary auth, arbitrary JSON shape — so each way it
+    // can go wrong gets its own message instead of one generic failure.
+    let res;
+    try {
+      res = await fetch(acc.homelabUrl, { headers });
+    } catch (e) {
+      throw new Error(`Could not reach ${acc.homelabUrl} — the device may be offline, or it may be refusing browser requests (no CORS headers). Browsers report both the same way.`);
+    }
+    if (!res.ok) throw await httpFail(res, "Device");
+
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      const preview = text.trim().slice(0, 60).replace(/\s+/g, " ");
+      throw new Error(`That URL returned ${text.trim().startsWith("<") ? "HTML, not JSON" : "something that isn't JSON"}${preview ? ` (starts with: ${preview}…)` : ""}. Point it at an API endpoint rather than a web page.`);
+    }
+
+    const raw = extractJsonPath(data, acc.homelabPath);
+    if (raw === undefined || raw === null) {
+      const keys = data && typeof data === "object" ? Object.keys(data).slice(0, 8).join(", ") : "";
+      throw new Error(`No field "${acc.homelabPath}" in the response.${keys ? ` Top-level fields available: ${keys}.` : ""}`);
+    }
+    const value = Number(raw);
+    if (!Number.isFinite(value)) {
+      throw new Error(`Field "${acc.homelabPath}" is "${String(raw).slice(0, 40)}", which isn't a number.`);
+    }
+    return { totalLimit: acc.totalLimit, used: value, resetTime: acc.resetTime };
+  }
+
+  // ---------------------------------------------------------------------
+  // Refresh dispatch (real for wired accounts, simulated nudge otherwise)
+  // ---------------------------------------------------------------------
+  async function refreshAccount(id) {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc || acc._refreshing) return;
+    acc._refreshing = true;
+    render();
+
+    try {
+      // The entire dispatch. It cannot disagree with the "● Live" badge,
+      // because the badge is derived from this same reference.
+      const type = typeMetaFor(acc);
+      if (!type || typeof type.fetch !== "function") {
+        throw new Error("No live data source is wired for this account type — nothing was changed.");
+      }
+      const result = await type.fetch(credView(acc));
+
+      // Control cards report a state word, not a number, so they take a
+      // separate path from the numeric guard below.
+      if (result && typeof result.controlState === "string") {
+        const ctl = accounts.find(a => a.id === id);
+        if (!ctl) return;
+        ctl.controlState = result.controlState;
+        ctl.controlAttrs = result.controlAttrs || {};
+        ctl.lastError = null;
+        ctl.lastRefreshed = new Date().toISOString();
+        if (displayModeFor(ctl) === "camera") await loadCameraSnapshot(ctl);
+        return;
+      }
+      // Saving to `acc` directly would write into a stale object if the
+      // account was edited (and replaced) while the request was in flight,
+      // silently discarding the result. Re-resolve by id after the await.
+      const target = accounts.find(a => a.id === id);
+      if (!target) return;
+
+      const nextLimit = Number(result.totalLimit);
+      const nextUsed = Number(result.used);
+      // A provider returning null/undefined/a string used to land here as
+      // NaN and render a healthy green card. Refuse it instead — the
+      // existing error path already says numbers were left unchanged.
+      if (!Number.isFinite(nextLimit) || nextLimit <= 0 || !Number.isFinite(nextUsed)) {
+        throw new Error("Provider returned a non-numeric value — numbers left unchanged.");
+      }
+
+      target.totalLimit = nextLimit;
+      target.used = Math.max(0, nextUsed);
+      // Which hosts are actually the problem — the useful half of a security
+      // result. Capped so a large estate can't bloat localStorage.
+      if (Array.isArray(result.securityDetail)) {
+        target.securityDetail = result.securityDetail.slice(0, 20).map(String);
+      }
+      recordReading(target, target.used);   // a real reading from a real provider
+      const nextReset = Date.parse(result.resetTime);
+      if (Number.isFinite(nextReset)) target.resetTime = new Date(nextReset).toISOString();
+      if (result.unit) target.unit = result.unit;
+      target.lastError = null;
+      target._resetDue = false;
+      target.lastRefreshed = new Date().toISOString();
+      toast(`${target.name} refreshed.`, "success");
+    } catch (err) {
+      const target = accounts.find(a => a.id === id) || acc;
+      target.lastError = err.message || String(err);
+      toast(`${target.name}: ${target.lastError}`, "error");
+    } finally {
+      // Clear the guard on whichever object is live now, and on the
+      // original, so a replaced account can never be left stuck.
+      acc._refreshing = false;
+      const target = accounts.find(a => a.id === id);
+      if (target) target._refreshing = false;
+      persist();
+      render();
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Live simulation + countdown tick (runs every second)
+  // ---------------------------------------------------------------------
+  // Runs every second, so an exception here used to repeat forever and
+  // leave the page unusable. Everything is contained.
+  function tick() {
+    try {
+      tickCount++;
+      let changed = false;
+
+      accounts.forEach(acc => {
+        const remainingMs = Date.parse(acc.resetTime) - Date.now();
+        if (!Number.isFinite(remainingMs)) return;
+
+        if (remainingMs <= 0) {
+          if (isRealType(acc)) {
+            acc._resetDue = true;
+          } else {
+            const interval = Math.min(Number(acc.resetIntervalMs) || 24 * 3600 * 1000, MAX_RESET_INTERVAL_MS);
+            acc.used = 0;
+            acc.resetTime = new Date(Date.now() + interval).toISOString();
+            acc._resetDue = false;
+            changed = true;
+          }
+        } else if (acc._resetDue) {
+          // The window passed and a later refresh moved the reset forward,
+          // so the "reset pending" notice no longer applies.
+          acc._resetDue = false;
+        }
+
+        if (liveSimEnabled && !isRealType(acc) && tickCount % 4 === 0) {
+          const jitter = acc.totalLimit * (Math.random() * 0.004);
+          if (jitter > 0) {
+            // Growth cards are allowed past their target — clamping them
+            // to the goal made the demo freeze at 100%.
+            const next = acc.used + jitter;
+            acc.used = directionFor(acc) === "growth" ? next : Math.min(acc.totalLimit, next);
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) persist();
+      tickUi();
+    } catch (e) {
+      console.error("tick failed:", e);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------
+  // Icons and colours live on the PLATFORMS entry now, so a new platform
+  // never needs a second lookup table (or a pair of CSS variables) kept
+  // in sync with the config.
+  function platformIcon(platform) {
+    const meta = PLATFORMS[platform];
+    return `<svg viewBox="0 0 24 24" class="w-4 h-4">${(meta && meta.icon) || ""}</svg>`;
+  }
+
+  function platformHue(platform) {
+    const meta = PLATFORMS[platform];
+    return (meta && meta.hue) || "var(--text-muted)";
+  }
+
+  // The badge tint is derived from the hue rather than declared
+  // separately, so the two can't drift out of step.
+  function platformTint(platform) {
+    const hue = platformHue(platform);
+    if (!/^#[0-9a-f]{6}$/i.test(hue)) return "var(--surface-2)";
+    const r = parseInt(hue.slice(1, 3), 16);
+    const g = parseInt(hue.slice(3, 5), 16);
+    const b = parseInt(hue.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},0.14)`;
+  }
+
+  function renderFilterBar() {
+    const bar = document.getElementById("filterBar");
+    const counts = { all: accounts.length };
+    Object.keys(PLATFORMS).forEach(p => { counts[p] = accounts.filter(a => a.platform === p).length; });
+    const pills = [["all", "All"], ...Object.entries(PLATFORMS).map(([k, v]) => [k, v.label])];
+    // No inline colour here on purpose: inline styles beat the
+    // .filter-pill[data-active] rule, which left the selected pill with
+    // only a 1.22:1 background shift and no visible selection at all.
+    bar.innerHTML = pills.map(([key, label]) => `
+      <button type="button" class="filter-pill px-3 py-1.5 rounded-full border shrink-0" data-filter="${key}"
+              data-active="${activeFilter === key}" aria-pressed="${activeFilter === key}">
+        ${label} <span class="filter-pill-count">${counts[key] ?? 0}</span>
+      </button>
+    `).join("");
+  }
+
+  // ---------------------------------------------------------------------
+  // Attention layer. 23 of 25 cards were an identical green across 6,600px
+  // of scroll, so nothing stood out and a problem at position 23 was
+  // invisible. These counts are the entry point; clicking one filters.
+  // ---------------------------------------------------------------------
+  const ATTENTION_FILTERS = {
+    __attention: needsAttention,
+    __stale: isStale,
+    __errors: acc => !!acc.lastError
+  };
+
+  function renderSummaryStrip() {
+    const el = document.getElementById("summaryStrip");
+    if (!el) return;
+    const attention = accounts.filter(needsAttention).length;
+    const stale = accounts.filter(isStale).length;
+    const errored = accounts.filter(a => a.lastError).length;
+    const healthy = accounts.length - attention;
+
+    const chip = (key, count, label, color) => `
+      <button type="button" class="summary-chip px-3 py-1.5 rounded-full border shrink-0"
+              data-filter="${key}" data-active="${activeFilter === key}" aria-pressed="${activeFilter === key}">
+        <span style="color:${color}; font-weight:600">${count}</span>
+        <span>${label}</span>
+      </button>`;
+
+    const parts = [];
+    if (attention) parts.push(chip("__attention", attention, attention === 1 ? "needs attention" : "need attention", "var(--status-critical-text)"));
+    if (errored) parts.push(chip("__errors", errored, errored === 1 ? "error" : "errors", "var(--status-critical-text)"));
+    if (stale) parts.push(chip("__stale", stale, "not refreshed today", "var(--status-warning-text)"));
+    parts.push(chip("all", healthy, healthy === 1 ? "healthy" : "healthy", "var(--status-good-text)"));
+
+    el.innerHTML = parts.join("");
+  }
+
+  // A live card is "stale" when it has real data behind it but hasn't been
+  // refreshed today. Manual cards are never stale — nothing is expected to
+  // fetch them.
+  function isStale(acc) {
+    if (!isRealType(acc)) return false;
+    if (!acc.lastRefreshed) return true;
+    return Date.now() - Date.parse(acc.lastRefreshed) > 24 * 3600 * 1000;
+  }
+
+  function needsAttention(acc) {
+    const st = statusFor(acc);
+    return st === "exhausted" || st === "warning" || st === "unknown";
+  }
+
+  // Problems float to the top; everything else keeps the order you put it
+  // in. The original index is the tiebreak, so healthy cards never shuffle
+  // among themselves and the layout stays learnable.
+  function sortForDisplay(list) {
+    return list
+      .map((acc, i) => ({ acc, i, rank: needsAttention(acc) ? 0 : 1 }))
+      .sort((a, b) => a.rank - b.rank || a.i - b.i)
+      .map(x => x.acc);
+  }
+
+  // ---------------------------------------------------------------------
+  // Everything on a card that can change without the card itself being
+  // added, removed or reordered. Computed once here and consumed by BOTH
+  // the full-HTML path and the in-place update path, so the two can't
+  // drift apart.
+  // ---------------------------------------------------------------------
+  function cardDynamics(acc) {
+    const mode = displayModeFor(acc);
+    const isControlCard = mode === "control" || mode === "camera";
+    const isCameraCard = mode === "camera";
+    // Control and status cards both report a word rather than a number,
+    // so neither draws a meter.
+    const isStatusCard = mode === "status" || isControlCard;
+
+    const p = progressFor(acc);
+    const status = isControlCard || mode === "status"
+      ? (acc.controlState ? haStatusFor(acc.controlState) : statusFor(acc))
+      : statusFor(acc);
+    const s = STATUS[status] || STATUS.unknown;
+    const real = isRealType(acc);
+    const remainingMs = Date.parse(acc.resetTime) - Date.now();
+
+    // A reset cycle beyond a year is the "effectively never" sentinel used
+    // by credit cards and growth targets. Printing "resets in 36499d 23h"
+    // on half the cards buried the countdowns that actually matter.
+    const hasRealCycle = Number(acc.resetIntervalMs) < 365 * 24 * 3600 * 1000;
+    let countdown = "";
+    if (acc._resetDue && real) countdown = "reset pending — refresh to confirm";
+    else if (hasRealCycle && Number.isFinite(remainingMs)) countdown = `resets in ${formatDuration(remainingMs)}`;
+
+    const trend = trendFor(acc);
+
+    // Control cards get their hero from the live entity state; a card that
+    // has never been refreshed says so rather than inventing a state.
+    const type = typeMetaFor(acc);
+    const heroWord = isControlCard || mode === "status"
+      ? (acc.controlState ? friendlyState({ state: acc.controlState }) : (acc.unit || "Not read yet"))
+      : "";
+    const summary = (type && typeof type.summary === "function" && acc.controlAttrs)
+      ? (type.summary(acc.controlAttrs) || "")
+      : "";
+
+    return {
+      p, s, status, isStatusCard, isControlCard, isCameraCard, real, trend,
+      heroValue: isStatusCard ? heroWord : (p.valid ? p.displayPct.toFixed(1) + "%" : "—"),
+      heroSuffix: isStatusCard ? "" : (p.valid ? p.suffix : "no data"),
+      heroColor: isStatusCard ? s.color : "var(--text-primary)",
+      ratio: isControlCard ? summary
+           : isStatusCard ? ""
+           : `${formatNumber(acc.used)} / ${formatNumber(acc.totalLimit)} ${acc.unit}`,
+      countdown,
+      updated: `updated ${timeAgo(acc.lastRefreshed)}`,
+      meterLabel: p.valid
+        ? `${p.displayPct.toFixed(1)}% ${p.suffix}`
+        : "no data",
+      error: acc.lastError || ""
+    };
+  }
+
+  // Action buttons for a control card. `actions` on the account type is a
+  // function of (acc, attrs) so a climate card can compute its setpoint
+  // steps from whatever HA last reported.
+  function controlActionsFor(acc) {
+    const type = typeMetaFor(acc);
+    if (!type || typeof type.actions !== "function") return [];
+    try { return type.actions(acc, acc.controlAttrs || {}) || []; }
+    catch (e) { console.warn("actions() failed for", acc.id, e); return []; }
+  }
+
+  function controlActionsHtml(acc) {
+    const actions = controlActionsFor(acc);
+    if (!actions.length) return "";
+    return `<div class="flex flex-wrap gap-2" data-actions>${
+      actions.map((a, i) => `
+        <button type="button" class="control-btn text-xs font-medium px-3 py-2 rounded-lg"
+                data-id="${escapeHtml(acc.id)}" data-action-index="${i}"
+                style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);"
+                ${acc._acting ? "disabled" : ""}>${escapeHtml(a.label)}</button>`).join("")
+    }</div>`;
+  }
+
+  // A camera snapshot needs the token, which can't go in an <img src>
+  // without leaking it into the URL — so the image is fetched and turned
+  // into an object URL instead.
+  function cameraHtml(acc) {
+    if (!acc._cameraUrl) {
+      return `<div class="text-xs rounded-lg px-3 py-6 text-center" data-camera
+                   style="background:var(--surface-2); color:var(--text-muted)">Refresh to load a snapshot</div>`;
+    }
+    return `<img data-camera src="${escapeHtml(acc._cameraUrl)}" alt="Snapshot from ${escapeHtml(acc.name)}"
+                 class="w-full rounded-lg" style="display:block">`;
+  }
+
+  function renderCard(acc) {
+    const meta = PLATFORMS[acc.platform];
+    // normalizeAccount drops unknown platforms on load, but a card can
+    // still be asked to render one mid-session; skip rather than throw
+    // out of the middle of a full re-render.
+    if (!meta) return "";
+    const typeMeta = (meta.accountTypes || []).find(t => t.value === acc.accountType);
+    const d = cardDynamics(acc);
+    const cardTitleId = `card-title-${escapeHtml(acc.id)}`;
+
+    const modeTag = d.real
+      ? `<span class="inline-flex items-center gap-1" style="color:var(--status-good-text)">● Live</span>`
+      : `<span class="inline-flex items-center gap-1" style="color:var(--text-muted)">○ Manual</span>`;
+
+    const meterHtml = d.isStatusCard ? "" : `
+        <div class="w-full h-2.5 rounded-full meter-track mt-2" role="progressbar" data-meter
+             aria-labelledby="${cardTitleId}"
+             aria-valuenow="${d.p.barPct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
+             aria-valuetext="${escapeHtml(d.meterLabel)}">
+          <div class="h-2.5 meter-fill" data-meter-fill style="width:${d.p.barPct}%; background:${d.s.color};"></div>
+        </div>`;
+
+    // Manual accounts used to fabricate a jittered number here, with the
+    // same green success toast a real API call gets. The honest action for
+    // a hand-maintained card is editing it.
+    const actionBtn = d.real
+      ? `<button type="button" class="refresh-btn flex-1 text-xs font-medium px-3 py-2 rounded-lg flex items-center justify-center gap-1.5" data-id="${escapeHtml(acc.id)}"
+          style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);" ${acc._refreshing ? "disabled" : ""}>
+          ${acc._refreshing ? '<svg class="w-3.5 h-3.5 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/></svg> Refreshing' : "Refresh"}
+        </button>`
+      : `<button type="button" class="edit-btn flex-1 text-xs font-medium px-3 py-2 rounded-lg" data-id="${escapeHtml(acc.id)}"
+          style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Update</button>`;
+
+    return `
+    <div class="card rounded-2xl p-4 flex flex-col gap-3" data-card-id="${escapeHtml(acc.id)}">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style="background:${platformTint(acc.platform)}; color:${platformHue(acc.platform)}" aria-hidden="true">
+            ${platformIcon(acc.platform)}
+          </span>
+          <div class="min-w-0">
+            <h3 class="text-sm font-medium truncate" id="${cardTitleId}" title="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</h3>
+            <div class="text-xs truncate" style="color:var(--text-muted)">${meta.label} &middot; ${typeMeta ? typeMeta.label : escapeHtml(acc.accountType)}</div>
+          </div>
+        </div>
+        <span class="text-xs font-medium px-2 py-1 rounded-full shrink-0 flex items-center gap-1" data-badge
+              style="background:${d.s.bg}; color:${d.s.text || d.s.color}">
+          <span style="font-size:0.6rem" aria-hidden="true">●</span><span data-badge-label>${d.s.label}</span>
+        </span>
+      </div>
+
+      <div>
+        <div class="hero-figure text-3xl font-semibold" style="color:${d.heroColor}" data-hero>
+          <span data-hero-value>${escapeHtml(d.heroValue)}</span><span class="text-sm font-normal" style="color:var(--text-muted)" data-hero-suffix> ${escapeHtml(d.heroSuffix)}</span>
+        </div>
+        ${meterHtml}
+        <div class="flex justify-between gap-2 text-xs mt-1.5" style="color:var(--text-secondary)">
+          <span data-ratio>${escapeHtml(d.ratio)}</span>
+          <span data-countdown>${escapeHtml(d.countdown)}</span>
+        </div>
+      </div>
+
+      ${d.isCameraCard ? `<div data-camera-slot>${cameraHtml(acc)}</div>` : ""}
+      ${d.isControlCard && !d.isCameraCard ? controlActionsHtml(acc) : ""}
+      <div data-findings>${findingsHtml(acc)}</div>
+
+      <div class="text-xs flex items-center justify-between gap-2" style="color:var(--text-muted)">
+        <span>${modeTag} &middot; <span data-updated>${escapeHtml(d.updated)}</span></span>
+        <span data-trend>${trendHtml(acc, d.trend)}</span>
+      </div>
+
+      <div data-error-slot>${d.error ? errorBannerHtml(acc.id, d.error) : ""}</div>
+
+      <div class="flex items-center gap-2 mt-1">
+        ${actionBtn}
+        <button type="button" class="edit-btn text-xs font-medium px-3 py-2 rounded-lg" data-id="${escapeHtml(acc.id)}" style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Edit</button>
+      </div>
+    </div>`;
+  }
+
+  // A count on its own ("3 changes") isn't actionable; the lines naming the
+  // hosts are. Collapsed by default so a card stays card-sized.
+  function findingsHtml(acc) {
+    const lines = Array.isArray(acc.securityDetail) ? acc.securityDetail : [];
+    if (!lines.length) return "";
+    return `<details class="findings">
+      <summary class="text-xs" style="color:var(--text-muted); cursor:pointer">
+        ${lines.length} finding${lines.length === 1 ? "" : "s"}
+      </summary>
+      <ul class="text-xs mt-1" style="color:var(--text-secondary)">
+        ${lines.map(l => `<li>${escapeHtml(l)}</li>`).join("")}
+      </ul>
+    </details>`;
+  }
+
+  function errorBannerHtml(id, message) {
+    return `<div class="text-xs rounded-lg px-2 py-1.5 flex items-start justify-between gap-2"
+         style="background:var(--status-critical-bg); color:var(--status-critical-text)">
+      <span>${escapeHtml(message)}</span>
+      <button type="button" class="dismiss-error shrink-0" data-id="${escapeHtml(id)}" aria-label="Dismiss error"
+              style="color:var(--status-critical-text); line-height:1">&times;</button>
+    </div>`;
+  }
+
+  // Updates only the values on an already-rendered card. Rebuilding the
+  // whole grid every second used to destroy focus on all 80 tabbable
+  // elements, make text impossible to select, and drop clicks that landed
+  // between frames.
+  function updateCardInPlace(cardEl, acc) {
+    const d = cardDynamics(acc);
+    const set = (sel, text) => {
+      const el = cardEl.querySelector(sel);
+      if (el && el.textContent !== text) el.textContent = text;
+    };
+
+    set("[data-countdown]", d.countdown);
+    set("[data-updated]", d.updated);
+    set("[data-ratio]", d.ratio);
+    set("[data-hero-value]", d.heroValue);
+    set("[data-hero-suffix]", " " + d.heroSuffix);
+    set("[data-badge-label]", d.s.label);
+
+    const hero = cardEl.querySelector("[data-hero]");
+    if (hero) hero.style.color = d.heroColor;
+
+    const badge = cardEl.querySelector("[data-badge]");
+    if (badge) {
+      badge.style.background = d.s.bg;
+      badge.style.color = d.s.text || d.s.color;
+    }
+
+    const meter = cardEl.querySelector("[data-meter]");
+    if (meter) {
+      meter.setAttribute("aria-valuenow", d.p.barPct.toFixed(0));
+      meter.setAttribute("aria-valuetext", d.meterLabel);
+    }
+    const fill = cardEl.querySelector("[data-meter-fill]");
+    if (fill) {
+      fill.style.width = d.p.barPct + "%";
+      fill.style.background = d.s.color;
+    }
+
+    const trendSlot = cardEl.querySelector("[data-trend]");
+    if (trendSlot) trendSlot.innerHTML = trendHtml(acc, d.trend);
+
+    const findingsSlot = cardEl.querySelector("[data-findings]");
+    if (findingsSlot) {
+      const wanted = findingsHtml(acc);
+      // Rewriting this every tick would slam a <details> the user just opened.
+      if (findingsSlot.innerHTML.trim() !== wanted.trim()) {
+        const wasOpen = !!findingsSlot.querySelector("details[open]");
+        findingsSlot.innerHTML = wanted;
+        const det = findingsSlot.querySelector("details");
+        if (det && wasOpen) det.open = true;
+      }
+    }
+
+    const errSlot = cardEl.querySelector("[data-error-slot]");
+    if (errSlot) {
+      const wanted = d.error ? errorBannerHtml(acc.id, d.error) : "";
+      if (errSlot.innerHTML.trim() !== wanted.trim()) errSlot.innerHTML = wanted;
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function filterLabel(key) {
+    if (key === "__attention") return "cards needing attention";
+    if (key === "__stale") return "stale";
+    if (key === "__errors") return "errored";
+    return (PLATFORMS[key] || {}).label || key;
+  }
+
+  function visibleAccounts() {
+    const predicate = ATTENTION_FILTERS[activeFilter];
+    const list = activeFilter === "all"
+      ? accounts.slice()
+      : (predicate ? accounts.filter(predicate) : accounts.filter(a => a.platform === activeFilter));
+    return sortForDisplay(list);
+  }
+
+  // Only things that require rebuilding DOM structure belong here — order,
+  // membership, and the two states that swap a button out.
+  function structureSignature(list) {
+    // `_acting` and the control state are included because both swap out
+    // button markup, which the in-place text update path can't do.
+    return list.map(a =>
+      `${a.id}:${a._refreshing ? 1 : 0}:${a._acting ? 1 : 0}:${isRealType(a) ? 1 : 0}:${a.controlState || ""}`
+    ).join("|");
+  }
+
+  let lastStructureSignature = null;
+
+  function render() {
+    renderFilterBar();
+    renderSummaryStrip();
+    const grid = document.getElementById("cardGrid");
+    const empty = document.getElementById("emptyState");
+    const list = visibleAccounts();
+
+    if (list.length === 0) {
+      grid.innerHTML = "";
+      // "No accounts yet" is wrong when accounts exist but the active
+      // filter excludes all of them.
+      empty.innerHTML = accounts.length === 0
+        ? 'No accounts yet &mdash; click <span style="color:var(--text-secondary)">Add Account</span> to get started.'
+        : `No ${escapeHtml(filterLabel(activeFilter))} accounts &mdash; <button type="button" id="clearFilterBtn" style="color:var(--text-secondary); text-decoration:underline">show all ${accounts.length}</button>.`;
+      empty.classList.remove("hidden");
+    } else {
+      empty.classList.add("hidden");
+      grid.innerHTML = list.map(renderCard).join("");
+    }
+    lastStructureSignature = structureSignature(list);
+
+    const liveToggle = document.getElementById("liveSimToggle");
+    liveToggle.dataset.on = String(liveSimEnabled);
+    liveToggle.setAttribute("aria-pressed", String(liveSimEnabled));
+
+    const subtitle = document.getElementById("headerSubtitle");
+    if (subtitle) {
+      const platformCount = new Set(accounts.map(a => a.platform)).size;
+      const liveCount = accounts.filter(isRealType).length;
+      subtitle.textContent = `${accounts.length} accounts across ${platformCount} platforms · ${liveCount} live`;
+    }
+  }
+
+  // The per-second path. Rebuilding the whole grid here is what destroyed
+  // focus, text selection and in-flight clicks; now it only rewrites the
+  // values that changed, and defers to a full render only when the set or
+  // order of cards actually differs.
+  function tickUi() {
+    const list = visibleAccounts();
+    if (structureSignature(list) !== lastStructureSignature) { render(); return; }
+
+    const grid = document.getElementById("cardGrid");
+    const byId = new Map(list.map(a => [a.id, a]));
+    grid.querySelectorAll("[data-card-id]").forEach(el => {
+      const acc = byId.get(el.getAttribute("data-card-id"));
+      if (acc) updateCardInPlace(el, acc);
+    });
+    renderSummaryStrip();
+  }
+
+  // ---------------------------------------------------------------------
+  // Modal
+  // ---------------------------------------------------------------------
+  function renderAccountTypeOptions(platform) {
+    const select = document.getElementById("f_accountType");
+    const meta = PLATFORMS[platform];
+    select.innerHTML = meta.accountTypes.map(t => `<option value="${t.value}">${t.label}</option>`).join("");
+  }
+
+  // ---------------------------------------------------------------------
+  // Credential fields are declared on each account type (see PLATFORMS)
+  // and rendered generically.
+  //
+  // Previously each of ~38 fields existed as three separate hand-written
+  // strings — a DOM id, a getElementById call, and a property read —
+  // spread across 72 call sites. A typo in any one silently broke that
+  // field while the UI still looked completely correct. Now the key is
+  // written once in the config and every path derives from it.
+  // ---------------------------------------------------------------------
+  const CRED_FIELD_PREFIX = "f_cred_";
+
+  const CONNECT_BUTTONS = {
+    azure:  { label: "Connect Microsoft Account", platform: "azure",  tokenKey: null },
+    twitch: { label: "Connect Twitch",            platform: "social", tokenKey: "twitchToken" },
+    fitbit: { label: "Connect Fitbit",            platform: "health", tokenKey: "fitbitToken" }
+  };
+
+  function credFieldId(key) { return CRED_FIELD_PREFIX + key; }
+
+  function credFieldHtml(field, value) {
+    const id = credFieldId(field.key);
+    if (field.type === "hidden") {
+      return `<input type="hidden" id="${id}" value="${escapeHtml(value)}">`;
+    }
+    const span = field.full ? " sm:col-span-2" : "";
+    const control = field.type === "select"
+      ? `<select id="${id}" class="w-full rounded-lg px-3 py-2 mt-1 text-sm">${
+          (field.options || []).map(([v, l]) =>
+            `<option value="${escapeHtml(v)}"${String(value) === v ? " selected" : ""}>${escapeHtml(l)}</option>`
+          ).join("")
+        }</select>`
+      : `<input type="${field.type || "text"}" id="${id}" value="${escapeHtml(value)}"${field.type === "number" ? ' step="any"' : ""}
+                class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="${escapeHtml(field.placeholder || "")}">`;
+    // `browse: true` pairs the input with a picker so entity ids never
+    // have to be typed or looked up in another tab.
+    if (field.browse) {
+      return `<label class="block${span}">
+        <span class="text-xs" style="color:var(--text-muted)">${escapeHtml(field.label || field.key)}</span>
+        <span class="flex gap-2 mt-1">
+          ${control.replace('class="w-full', 'class="flex-1')}
+          <button type="button" class="browse-entity text-xs font-medium px-3 py-2 rounded-lg shrink-0"
+                  data-target="${id}"
+                  style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Browse</button>
+        </span>
+      </label>`;
+    }
+    return `<label class="block${span}">
+        <span class="text-xs" style="color:var(--text-muted)">${escapeHtml(field.label || field.key)}</span>
+        ${control}
+      </label>`;
+  }
+
+  function fieldsFor(platform, accountType) {
+    const meta = PLATFORMS[platform];
+    if (!meta) return { type: null, fields: [] };
+    const type = (meta.accountTypes || []).find(t => t.value === accountType) || null;
+    return { type, fields: (type && type.fields) || [] };
+  }
+
+  function renderCredentialFields(platform, accountType, values) {
+    const container = document.getElementById("f_credentials");
+    const { type, fields } = fieldsFor(platform, accountType);
+    if (!fields.length && !(type && type.connect)) { container.innerHTML = ""; return; }
+
+    const creds = (values && values.creds) || {};
+    const valueOf = f => (creds[f.key] != null ? creds[f.key] : "");
+    const visible = fields.filter(f => f.type !== "hidden");
+    const hidden = fields.filter(f => f.type === "hidden");
+
+    const grid = visible.length
+      ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${visible.map(f => credFieldHtml(f, valueOf(f))).join("")}</div>`
+      : "";
+    const hiddenHtml = hidden.map(f => credFieldHtml(f, valueOf(f))).join("");
+
+    let connectHtml = "";
+    if (type && type.connect && CONNECT_BUTTONS[type.connect]) {
+      const c = CONNECT_BUTTONS[type.connect];
+      const connected = c.tokenKey ? !!creds[c.tokenKey] : false;
+      const status = c.tokenKey ? (connected ? "Connected" : "Not connected") : "";
+      connectHtml = `
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" id="connectBtn" data-flow="${escapeHtml(type.connect)}"
+                  class="text-xs font-medium px-3 py-2 rounded-lg"
+                  style="background:${platformTint(c.platform)}; color:${platformHue(c.platform)}; border:1px solid var(--border-strong);">${escapeHtml(c.label)}</button>
+          <span id="connectStatus" class="text-xs" style="color:${connected ? "var(--status-good-text)" : "var(--text-muted)"}">${escapeHtml(status)}</span>
+        </div>`;
+    }
+
+    const help = (type && type.help)
+      ? `<p class="text-xs" style="color:var(--text-muted)">${escapeHtml(type.help)}</p>`
+      : "";
+
+    container.innerHTML = grid + hiddenHtml + connectHtml + help;
+  }
+
+  // Reads whatever the current account type declares. Starts from the
+  // already-saved credentials so switching type and back doesn't discard
+  // the other type's values.
+  function readCredentialFields(platform, accountType, existingCreds) {
+    const { fields } = fieldsFor(platform, accountType);
+    const out = Object.assign({}, existingCreds || {});
+    fields.forEach(f => {
+      const el = document.getElementById(credFieldId(f.key));
+      if (!el) return;
+      // Passwords keep surrounding whitespace out of the trim path only
+      // because a pasted token should never be silently altered.
+      out[f.key] = f.type === "password" ? el.value : el.value.trim();
+    });
+    return out;
+  }
+
+  // Required-but-empty fields, in form order.
+  function missingCredentials(platform, accountType) {
+    const { fields } = fieldsFor(platform, accountType);
+    return fields
+      .filter(f => f.required)
+      .map(f => ({ label: f.label || f.key, el: document.getElementById(credFieldId(f.key)) }))
+      .filter(f => f.el && !String(f.el.value).trim());
+  }
+
+  // ---------------------------------------------------------------------
+  // Settings dialog + entity browser
+  // ---------------------------------------------------------------------
+  function openSettings() {
+    document.getElementById("s_haBaseUrl").value = settings.haBaseUrl || "";
+    document.getElementById("s_haToken").value = settings.haToken || "";
+    document.getElementById("s_backendBaseUrl").value = settings.backendBaseUrl || "";
+    document.getElementById("s_backendToken").value = settings.backendToken || "";
+    document.getElementById("haTestStatus").textContent = "";
+    document.getElementById("backendTestStatus").textContent = "";
+    document.getElementById("settingsOverlay").classList.remove("hidden");
+    document.body.classList.add("modal-open");
+    document.getElementById("s_haBaseUrl").focus();
+  }
+
+  function closeSettings() {
+    document.getElementById("settingsOverlay").classList.add("hidden");
+    if (document.getElementById("modalOverlay").classList.contains("hidden")) {
+      document.body.classList.remove("modal-open");
+    }
+  }
+
+  // Entities are fetched once per picker open and cached for the session —
+  // a large install can return several hundred.
+  let entityCache = null;
+  let entityPickTarget = null;
+
+  async function openEntityBrowser(targetInputId, domainHint) {
+    entityPickTarget = targetInputId;
+    const list = document.getElementById("entityList");
+    const hint = document.getElementById("entityHint");
+    const search = document.getElementById("entitySearch");
+    search.value = "";
+    document.getElementById("entityOverlay").classList.remove("hidden");
+    document.body.classList.add("modal-open");
+
+    if (!haConfigured()) {
+      list.innerHTML = "";
+      hint.textContent = "Home Assistant isn't connected yet — close this and open Settings first.";
+      return;
+    }
+
+    list.innerHTML = `<div class="px-3 py-3 text-xs" style="color:var(--text-muted)">Loading entities…</div>`;
+    hint.textContent = "";
+    try {
+      if (!entityCache) entityCache = await haListStates();
+      renderEntityList(domainHint || "");
+      search.focus();
+    } catch (e) {
+      list.innerHTML = "";
+      hint.textContent = e.message || String(e);
+    }
+  }
+
+  function closeEntityBrowser() {
+    document.getElementById("entityOverlay").classList.add("hidden");
+    entityPickTarget = null;
+    // The account modal is usually still open underneath.
+    if (document.getElementById("modalOverlay").classList.contains("hidden") &&
+        document.getElementById("settingsOverlay").classList.contains("hidden")) {
+      document.body.classList.remove("modal-open");
+    }
+  }
+
+  function renderEntityList(query) {
+    const list = document.getElementById("entityList");
+    const hint = document.getElementById("entityHint");
+    const q = String(query || "").toLowerCase().trim();
+    const all = entityCache || [];
+    const matches = all.filter(e => {
+      const id = String(e.entity_id || "");
+      const name = String((e.attributes && e.attributes.friendly_name) || "");
+      return !q || id.toLowerCase().includes(q) || name.toLowerCase().includes(q);
+    }).slice(0, 200);
+
+    if (!matches.length) {
+      list.innerHTML = `<div class="px-3 py-3 text-xs" style="color:var(--text-muted)">No entities match.</div>`;
+      hint.textContent = `${all.length} entities available.`;
+      return;
+    }
+    list.innerHTML = matches.map(e => {
+      const id = String(e.entity_id || "");
+      const name = String((e.attributes && e.attributes.friendly_name) || id);
+      const state = String(e.state == null ? "" : e.state);
+      return `<button type="button" class="entity-row" data-entity="${escapeHtml(id)}">
+        <span>${escapeHtml(name)}</span> <span class="eid">${escapeHtml(id)} · ${escapeHtml(state)}</span>
+      </button>`;
+    }).join("");
+    hint.textContent = matches.length < all.length
+      ? `Showing ${matches.length} of ${all.length} entities.`
+      : `${all.length} entities.`;
+  }
+
+  function toLocalDatetimeInputValue(iso) {
+    const d = new Date(iso);
+    const pad = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function openModal(id) {
+    const form = document.getElementById("accountForm");
+    form.reset();
+    const acc = id ? accounts.find(a => a.id === id) : null;
+
+    document.getElementById("modalTitle").textContent = acc ? "Edit Account" : "Add Account";
+    document.getElementById("deleteAccountBtn").classList.toggle("hidden", !acc);
+    document.getElementById("f_id").value = acc ? acc.id : "";
+    document.getElementById("f_name").value = acc ? acc.name : "";
+
+    const platform = acc ? acc.platform : "chatgpt";
+    document.getElementById("f_platform").value = platform;
+    renderAccountTypeOptions(platform);
+    document.getElementById("f_accountType").value = acc ? acc.accountType : PLATFORMS[platform].accountTypes[0].value;
+    document.getElementById("f_typeNote").textContent = PLATFORMS[platform].note;
+    renderCredentialFields(platform, document.getElementById("f_accountType").value, acc || {});
+
+    setFormError("");
+    document.getElementById("f_direction").value = (acc && acc.direction) || "";
+    document.getElementById("f_totalLimit").value = acc ? acc.totalLimit : 100;
+    document.getElementById("f_used").value = acc ? acc.used : 0;
+    document.getElementById("f_unit").value = acc ? acc.unit : "tokens";
+    document.getElementById("f_resetTime").value = toLocalDatetimeInputValue(acc ? acc.resetTime : new Date(Date.now() + 3600 * 1000).toISOString());
+    document.getElementById("f_resetIntervalHours").value = acc ? (acc.resetIntervalMs / 3600000) : 24;
+    syncDirectionUi();
+
+    document.getElementById("modalOverlay").classList.remove("hidden");
+    document.body.classList.add("modal-open");
+    // Remember where focus came from so Esc/Cancel can put it back.
+    lastFocusedBeforeModal = document.activeElement;
+    const nameField = document.getElementById("f_name");
+    if (nameField) nameField.focus();
+  }
+
+  let lastFocusedBeforeModal = null;
+
+  function setFormError(message) {
+    const el = document.getElementById("f_formError");
+    if (!el) return;
+    el.textContent = message || "";
+    el.classList.toggle("hidden", !message);
+  }
+
+  // Sensible starting values per account type, so switching from a Claude
+  // quota to an Azure quota doesn't leave "tokens" and a 24-hour cycle
+  // sitting in the form.
+  const TYPE_DEFAULTS = {
+    "chatgpt/consumer":         { unit: "messages", totalLimit: 40, hours: 3 },
+    "chatgpt/api-key":          { unit: "tokens", totalLimit: 1000000, hours: 24 },
+    "claude/consumer":          { unit: "messages", totalLimit: 45, hours: 5 },
+    "claude/api-key":           { unit: "tokens", totalLimit: 400000, hours: 24 },
+    "copilot/individual":       { unit: "AI credits ($)", totalLimit: 200, hours: 720 },
+    "copilot/org-admin":        { unit: "AI credits ($)", totalLimit: 500, hours: 720 },
+    "azure/cost":               { unit: "$ spent", totalLimit: 1000, hours: 720 },
+    "azure/quota":              { unit: "units", totalLimit: 100, hours: 876000 },
+    "azure/health":             { unit: "Unknown", totalLimit: 100, hours: 876000 },
+    "financial/credit-card":    { unit: "$ balance", totalLimit: 5000, hours: 876000 },
+    "financial/budget":         { unit: "$ this cycle", totalLimit: 150, hours: 720 },
+    "cloudflare/zone-analytics":{ unit: "requests this month", totalLimit: 100000, hours: 720 },
+    "investments/crypto":       { unit: "$ value", totalLimit: 10000, hours: 876000 },
+    "investments/stock":        { unit: "$ value", totalLimit: 10000, hours: 876000 },
+    "social/youtube":           { unit: "subscribers", totalLimit: 10000, hours: 876000 },
+    "social/github-repo":       { unit: "stars", totalLimit: 1000, hours: 876000 },
+    "social/discord":           { unit: "online", totalLimit: 500, hours: 876000 },
+    "social/twitch":            { unit: "followers", totalLimit: 1000, hours: 876000 },
+    "homeassistant/sensor":     { unit: "units", totalLimit: 100, hours: 876000 },
+    "homelab/json-metric":      { unit: "units", totalLimit: 100, hours: 876000 },
+    "security/port-drift":      { unit: "changes", totalLimit: 5, hours: 876000 },
+    "security/tls-expiry":      { unit: "days", totalLimit: 90, hours: 876000 },
+    "security/http-headers":    { unit: "missing", totalLimit: 10, hours: 876000 },
+    "health/manual":            { unit: "steps", totalLimit: 10000, hours: 24 },
+    "health/fitbit":            { unit: "steps", totalLimit: 10000, hours: 24 }
+  };
+
+  function applyTypeDefaults(platform, accountType) {
+    const d = TYPE_DEFAULTS[`${platform}/${accountType}`];
+    if (!d) return;
+    document.getElementById("f_unit").value = d.unit;
+    document.getElementById("f_totalLimit").value = d.totalLimit;
+    document.getElementById("f_resetIntervalHours").value = d.hours;
+  }
+
+
+  // Keeps the direction control honest about what it will actually do:
+  // names the inherited default, relabels "Total limit" to match, and
+  // disappears entirely for status cards where direction is meaningless.
+  function syncDirectionUi() {
+    const platform = document.getElementById("f_platform").value;
+    const accountType = document.getElementById("f_accountType").value;
+    const probe = { platform, accountType, direction: document.getElementById("f_direction").value };
+    const typeMeta = typeMetaFor(probe);
+    const isStatus = !!(typeMeta && typeMeta.display === "status");
+
+    document.getElementById("f_directionWrap").classList.toggle("hidden", isStatus);
+    if (isStatus) return;
+
+    const inherited = (typeMeta && typeMeta.direction) || "depletion";
+    const effective = directionFor(probe);
+    document.getElementById("f_directionHint").textContent =
+      `Default for this type: ${inherited === "growth" ? "higher is better" : "lower is better"}.`;
+    document.getElementById("f_totalLimitLabel").textContent =
+      effective === "growth" ? "Target" : "Total limit";
+  }
+
+  function closeModal() {
+    document.getElementById("modalOverlay").classList.add("hidden");
+    document.body.classList.remove("modal-open");
+    setFormError("");
+    if (lastFocusedBeforeModal && document.contains(lastFocusedBeforeModal)) {
+      lastFocusedBeforeModal.focus();
+    }
+    lastFocusedBeforeModal = null;
+  }
+
+  function saveAccountForm(e) {
+    e.preventDefault();
+    const id = document.getElementById("f_id").value || uid();
+    const platform = document.getElementById("f_platform").value;
+    const accountType = document.getElementById("f_accountType").value;
+
+    // Refuse to save a card that claims to be live but can't possibly
+    // fetch. Previously this saved cleanly and failed on every refresh.
+    const missing = missingCredentials(platform, accountType);
+    if (missing.length) {
+      setFormError(`Fill in ${missing.map(f => f.label).join(", ")} before saving — this account type needs them to fetch live data.`);
+      missing[0].el.focus();
+      return;
+    }
+    setFormError("");
+    const rawLimit = Number(document.getElementById("f_totalLimit").value);
+    const totalLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 100;
+    // Deliberately NOT clamped to totalLimit: real usage can legitimately
+    // exceed a target or budget ($250 spent against a $200 cap), and
+    // clamping here silently rewrote the number just for opening the
+    // modal. The bar clamps at render instead.
+    const rawUsed = Number(document.getElementById("f_used").value);
+    const used = Number.isFinite(rawUsed) && rawUsed > 0 ? rawUsed : 0;
+    const parsedReset = Date.parse(document.getElementById("f_resetTime").value);
+    const resetIntervalMs = Math.min(
+      MAX_RESET_INTERVAL_MS,
+      Math.max(60000, (Number(document.getElementById("f_resetIntervalHours").value) || 24) * 3600000)
+    );
+    const resetTime = Number.isFinite(parsedReset)
+      ? new Date(parsedReset).toISOString()
+      : new Date(Date.now() + resetIntervalMs).toISOString();
+
+    const existing = accounts.find(a => a.id === id) || {};
+    const account = {
+      id,
+      name: document.getElementById("f_name").value.trim() || "Untitled account",
+      platform, accountType, totalLimit, used,
+      unit: document.getElementById("f_unit").value.trim() || "units",
+      direction: document.getElementById("f_direction").value,
+      resetTime, resetIntervalMs,
+      // Every credential in one line, driven by the account type's own
+      // field list. This replaced 36 getElementById lines plus 36
+      // hand-written property assignments.
+      creds: readCredentialFields(platform, accountType, existing.creds),
+      lastRefreshed: existing.lastRefreshed || null,
+      lastError: null
+    };
+
+    // Carry history across the edit, and treat a hand-typed value as a
+    // real reading — you looked at the statement, so it counts.
+    account.history = Array.isArray(existing.history) ? existing.history.slice() : [];
+    if (Number(existing.used) !== account.used) recordReading(account, account.used);
+
+    const idx = accounts.findIndex(a => a.id === id);
+    if (idx >= 0) accounts[idx] = account; else accounts.push(account);
+
+    persist();
+    closeModal();
+    render();
+    toast(`${account.name} saved.`, "success");
+  }
+
+  function deleteAccount() {
+    const id = document.getElementById("f_id").value;
+    if (!id) return;
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) return;
+    if (!confirm(`Delete "${acc.name}"? This can't be undone.`)) return;
+    accounts = accounts.filter(a => a.id !== id);
+    persist();
+    closeModal();
+    render();
+    toast(`${acc.name} deleted.`, "default");
+  }
+
+  // ---------------------------------------------------------------------
+  // Wiring
+  // ---------------------------------------------------------------------
+  function init() {
+    // If this load is an OAuth popup returning from a provider, hand the
+    // result to the opener and stop — never boot a second dashboard.
+    if (handleOAuthRedirectIfPopup()) return;
+
+    document.getElementById("f_platform").innerHTML = Object.entries(PLATFORMS)
+      .map(([key, meta]) => `<option value="${escapeHtml(key)}">${escapeHtml(meta.label)}</option>`).join("");
+
+    // Settings load first: the v3→v4 migration inside normalizeAccount
+    // lifts Home Assistant credentials up into them.
+    settings = loadSettings();
+    accounts = loadAccounts();
+    saveSettings();
+    liveSimEnabled = loadLiveSim();
+    // render() and the tick interval start at the END of init, after every
+    // listener is wired. Rendering first meant a throw during the initial
+    // paint left the page with visible-but-inert buttons.
+
+    document.getElementById("liveSimToggle").addEventListener("click", () => {
+      liveSimEnabled = !liveSimEnabled;
+      saveLiveSim(liveSimEnabled);
+      render();
+    });
+
+    document.getElementById("addAccountBtn").addEventListener("click", () => openModal(null));
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+    document.getElementById("cancelModalBtn").addEventListener("click", closeModal);
+    document.getElementById("modalOverlay").addEventListener("click", (e) => { if (e.target.id === "modalOverlay") closeModal(); });
+    document.getElementById("accountForm").addEventListener("submit", saveAccountForm);
+    document.getElementById("deleteAccountBtn").addEventListener("click", deleteAccount);
+
+    document.getElementById("f_platform").addEventListener("change", (e) => {
+      const platform = e.target.value;
+      const id = document.getElementById("f_id").value;
+      const acc = id ? accounts.find(a => a.id === id) : null;
+      const typeSelect = document.getElementById("f_accountType");
+
+      // Rebuilding the options resets the selection, which silently
+      // converted Live accounts to Manual just for browsing the dropdown.
+      // Keep the current type whenever the new platform still offers it.
+      const previousType = typeSelect.value;
+      renderAccountTypeOptions(platform);
+      const stillValid = (PLATFORMS[platform].accountTypes || []).some(t => t.value === previousType);
+      if (stillValid) typeSelect.value = previousType;
+
+      document.getElementById("f_typeNote").textContent = PLATFORMS[platform].note;
+      // Passing {} here wiped every saved credential on the account the
+      // moment the dropdown was touched, with a green "saved" toast.
+      renderCredentialFields(platform, typeSelect.value, acc || {});
+      if (!acc) applyTypeDefaults(platform, typeSelect.value);
+      syncDirectionUi();
+      setFormError("");
+    });
+
+    document.getElementById("f_direction").addEventListener("change", syncDirectionUi);
+
+    document.getElementById("f_accountType").addEventListener("change", (e) => {
+      const platform = document.getElementById("f_platform").value;
+      const id = document.getElementById("f_id").value;
+      const acc = id ? accounts.find(a => a.id === id) : null;
+      renderCredentialFields(platform, e.target.value, acc || {});
+      // Only re-default a NEW account; never overwrite values on one the
+      // user is editing.
+      if (!acc) applyTypeDefaults(platform, e.target.value);
+      syncDirectionUi();
+      setFormError("");
+    });
+
+    // Esc closes the topmost overlay only, so it doesn't blow away the
+    // account form underneath when you're just dismissing the picker.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (!document.getElementById("entityOverlay").classList.contains("hidden")) { closeEntityBrowser(); return; }
+      if (!document.getElementById("settingsOverlay").classList.contains("hidden")) { closeSettings(); return; }
+      if (!document.getElementById("modalOverlay").classList.contains("hidden")) closeModal();
+    });
+
+    // --- Settings ---
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("closeSettingsBtn").addEventListener("click", closeSettings);
+    document.getElementById("cancelSettingsBtn").addEventListener("click", closeSettings);
+    document.getElementById("settingsOverlay").addEventListener("click", (e) => {
+      if (e.target.id === "settingsOverlay") closeSettings();
+    });
+
+    document.getElementById("settingsForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      settings.haBaseUrl = document.getElementById("s_haBaseUrl").value.trim();
+      settings.haToken = document.getElementById("s_haToken").value;
+      settings.backendBaseUrl = document.getElementById("s_backendBaseUrl").value.trim();
+      settings.backendToken = document.getElementById("s_backendToken").value;
+      saveSettings();
+      entityCache = null;   // connection changed; re-read entities next time
+      closeSettings();
+      render();
+      toast("Settings saved.", "success");
+    });
+
+    document.getElementById("testHaBtn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("haTestStatus");
+      // Test whatever is currently typed, not what was last saved.
+      const previous = { haBaseUrl: settings.haBaseUrl, haToken: settings.haToken };
+      settings.haBaseUrl = document.getElementById("s_haBaseUrl").value.trim();
+      settings.haToken = document.getElementById("s_haToken").value;
+      statusEl.textContent = "Checking…";
+      statusEl.style.color = "var(--text-muted)";
+      try {
+        const list = await haListStates();
+        statusEl.textContent = `Connected — ${list.length} entities visible.`;
+        statusEl.style.color = "var(--status-good-text)";
+      } catch (err) {
+        statusEl.textContent = err.message || String(err);
+        statusEl.style.color = "var(--status-critical-text)";
+      } finally {
+        settings.haBaseUrl = previous.haBaseUrl;
+        settings.haToken = previous.haToken;
+      }
+    });
+
+    document.getElementById("testBackendBtn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("backendTestStatus");
+      const previous = { url: settings.backendBaseUrl, token: settings.backendToken };
+      settings.backendBaseUrl = document.getElementById("s_backendBaseUrl").value.trim();
+      settings.backendToken = document.getElementById("s_backendToken").value;
+      statusEl.textContent = "Checking…";
+      statusEl.style.color = "var(--text-muted)";
+      try {
+        // /health needs no auth, so a bad token still reports "reachable"
+        // — the proxy probe below is what actually exercises the token.
+        const res = await backendRequest("/health");
+        const info = await res.json();
+        const bits = [];
+        if (info.proxies && info.proxies.length) bits.push(`proxies: ${info.proxies.join(", ")}`);
+        if (info.oauth && info.oauth.length) bits.push(`oauth: ${info.oauth.join(", ")}`);
+        if (!info.authRequired) bits.push("⚠ no token set server-side");
+        statusEl.textContent = `Connected. ${bits.join(" · ") || "No providers configured yet."}`;
+        statusEl.style.color = "var(--status-good-text)";
+      } catch (err) {
+        statusEl.textContent = err.message || String(err);
+        statusEl.style.color = "var(--status-critical-text)";
+      } finally {
+        settings.backendBaseUrl = previous.url;
+        settings.backendToken = previous.token;
+      }
+    });
+
+    // --- Entity browser ---
+    document.getElementById("f_credentials").addEventListener("click", (e) => {
+      const browse = e.target.closest(".browse-entity");
+      if (!browse) return;
+      const platform = document.getElementById("f_platform").value;
+      openEntityBrowser(browse.dataset.target, platform === "homeassistant" ? "" : "");
+    });
+
+    document.getElementById("closeEntityBtn").addEventListener("click", closeEntityBrowser);
+    document.getElementById("entityOverlay").addEventListener("click", (e) => {
+      if (e.target.id === "entityOverlay") closeEntityBrowser();
+    });
+    document.getElementById("entitySearch").addEventListener("input", (e) => renderEntityList(e.target.value));
+    document.getElementById("entityList").addEventListener("click", (e) => {
+      const row = e.target.closest("[data-entity]");
+      if (!row || !entityPickTarget) return;
+      const input = document.getElementById(entityPickTarget);
+      if (input) input.value = row.dataset.entity;
+      closeEntityBrowser();
+      setFormError("");
+    });
+
+    // One handler, one button, keyed by the `connect:` name in the config.
+    // Each flow reads its inputs through the generated credential-field
+    // ids, so adding an OAuth platform means adding an entry here and a
+    // `connect:` on the account type — nothing else.
+    const CONNECT_FLOWS = {
+      azure: {
+        pending: "Opening Microsoft sign-in popup…",
+        run: async () => {
+          const username = await connectAzureAccount(
+            document.getElementById(credFieldId("azureTenantId")).value.trim(),
+            document.getElementById(credFieldId("azureClientId")).value.trim()
+          );
+          return `Connected as ${username}`;
+        }
+      },
+      twitch: {
+        pending: "Opening Twitch sign-in popup…",
+        run: async () => {
+          const token = await connectTwitchAccount(document.getElementById(credFieldId("twitchClientId")).value.trim());
+          document.getElementById(credFieldId("twitchToken")).value = token;
+          return "Connected — click Save to keep this session.";
+        }
+      },
+      fitbit: {
+        pending: "Opening Fitbit sign-in popup…",
+        run: async () => {
+          const token = await connectFitbitAccount(document.getElementById(credFieldId("fitbitClientId")).value.trim());
+          document.getElementById(credFieldId("fitbitToken")).value = token;
+          return "Connected — click Save to keep this session.";
+        }
+      }
+    };
+
+    document.getElementById("f_credentials").addEventListener("click", async (e) => {
+      const btn = e.target.closest("#connectBtn");
+      if (!btn) return;
+      const flow = CONNECT_FLOWS[btn.dataset.flow];
+      if (!flow) return;
+      const statusEl = document.getElementById("connectStatus");
+      btn.disabled = true;
+      statusEl.textContent = flow.pending;
+      statusEl.style.color = "var(--text-muted)";
+      try {
+        statusEl.textContent = await flow.run();
+        statusEl.style.color = "var(--status-good-text)";
+      } catch (err) {
+        statusEl.textContent = err.message || String(err);
+        statusEl.style.color = "var(--status-critical-text)";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Both bars use the same data-filter contract; clicking the already
+    // active one clears back to All.
+    function onFilterClick(e) {
+      const btn = e.target.closest("[data-filter]");
+      if (!btn) return;
+      const next = btn.dataset.filter;
+      activeFilter = (activeFilter === next && next !== "all") ? "all" : next;
+      render();
+    }
+    document.getElementById("filterBar").addEventListener("click", onFilterClick);
+    document.getElementById("summaryStrip").addEventListener("click", onFilterClick);
+
+    document.getElementById("refreshAllBtn").addEventListener("click", async () => {
+      const targets = accounts.filter(a => isRealType(a) && isStale(a));
+      if (!targets.length) { toast("Nothing stale — everything live was refreshed today.", "default"); return; }
+      toast(`Refreshing ${targets.length} stale account${targets.length === 1 ? "" : "s"}…`, "default");
+      // Sequential on purpose: several providers rate-limit, and a burst of
+      // parallel calls is the fastest way to get throttled.
+      for (const acc of targets) await refreshAccount(acc.id);
+    });
+
+    document.getElementById("cardGrid").addEventListener("click", (e) => {
+      const controlBtn = e.target.closest(".control-btn");
+      if (controlBtn) {
+        runControlAction(controlBtn.dataset.id, Number(controlBtn.dataset.actionIndex));
+        return;
+      }
+      const dismiss = e.target.closest(".dismiss-error");
+      if (dismiss) {
+        const acc = accounts.find(a => a.id === dismiss.dataset.id);
+        if (acc) { acc.lastError = null; persist(); render(); }
+        return;
+      }
+      const refreshBtn = e.target.closest(".refresh-btn");
+      if (refreshBtn) { refreshAccount(refreshBtn.dataset.id); return; }
+      const editBtn = e.target.closest(".edit-btn");
+      if (editBtn) { openModal(editBtn.dataset.id); return; }
+    });
+
+    document.getElementById("emptyState").addEventListener("click", (e) => {
+      if (!e.target.closest("#clearFilterBtn")) return;
+      activeFilter = "all";
+      render();
+    });
+
+    // Everything is wired now — safe to paint and start the clock.
+    render();
+    setInterval(tick, 1000);
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Runs identically on this Windows machine and on the home lab box.
+#
+#   cd server
+#   cp .env.example .env      # then fill in DASHBOARD_TOKEN at minimum
+#   docker compose up -d
+#
+# Then open http://localhost:8787 — the dashboard is served by this same
+# container, so the page and the API share an origin and no CORS setup is
+# needed for the default case.
+
+services:
+  dashboard:
+    build: .
+    container_name: earl-dashboard
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    env_file:
+      - .env
+    volumes:
+      # Mount the dashboard file by file rather than the whole folder.
+      # Mounting ../ would put server/.env inside the web root — the server
+      # refuses to serve dotfiles anyway, but the mount shouldn't expose it
+      # in the first place.
+      - ../index.html:/dashboard/index.html:ro
+      - ../README.md:/dashboard/README.md:ro
+      - ../NOTES.md:/dashboard/NOTES.md:ro
+      - ../ROADMAP.md:/dashboard/ROADMAP.md:ro
+      # Rotated OAuth refresh tokens survive restarts here.
+      - earl-state:/data
+
+volumes:
+  earl-state:
