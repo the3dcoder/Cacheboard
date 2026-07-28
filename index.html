@@ -434,6 +434,19 @@
       <span id="backendTestStatus" class="text-xs" style="color:var(--text-muted)"></span>
     </div>
 
+    <h3 class="text-sm font-medium mb-2">Cards</h3>
+    <p class="text-xs mb-3" style="color:var(--text-muted)">
+      A fresh install ships example cards so the dashboard isn't an empty page. Clear them
+      once you're ready to add your own — or restore them if you want the tour back.
+    </p>
+    <div class="flex items-center gap-2 flex-wrap mb-4">
+      <button type="button" id="clearCardsBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+              style="background:var(--status-critical-bg); color:var(--status-critical-text); border:1px solid var(--border-strong);">Remove all cards</button>
+      <button type="button" id="restoreExamplesBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Restore examples</button>
+      <span id="cardsActionStatus" class="text-xs" style="color:var(--text-muted)"></span>
+    </div>
+
     <div class="flex items-center justify-end gap-2 modal-actions">
       <button type="button" id="cancelSettingsBtn" class="text-sm px-3 py-2 rounded-lg" style="color:var(--text-secondary); background:var(--surface-2);">Cancel</button>
       <button type="submit" class="text-sm font-medium px-4 py-2 rounded-lg" style="background:var(--accent); color:#0d0d0d;">Save</button>
@@ -1161,13 +1174,12 @@
           : (parsed && Array.isArray(parsed.accounts) ? parsed.accounts : null);
         if (list) {
           const normalized = list.map(normalizeAccount).filter(Boolean);
-          if (normalized.length) {
-            // Write the repaired list straight back so the migration is
-            // complete and deterministic — otherwise legacy-shaped data
-            // lingers until some unrelated action happens to persist.
-            saveAccounts(normalized);
-            return normalized;
-          }
+          // An EMPTY list is a legitimate saved state — it means the user
+          // removed their cards. Re-seeding here would resurrect the demo
+          // data on the next reload and make "Remove all cards" look broken.
+          // Examples are only seeded when there is no stored payload at all.
+          saveAccounts(normalized);
+          return normalized;
         }
       }
     } catch (e) {
@@ -3397,6 +3409,34 @@
         settings.haBaseUrl = previous.haBaseUrl;
         settings.haToken = previous.haToken;
       }
+    });
+
+    // A fresh install ships example cards so the page isn't blank, but there
+    // was no way to get rid of them — which made "start using this for real"
+    // a 31-click chore.
+    document.getElementById("clearCardsBtn").addEventListener("click", () => {
+      const statusEl = document.getElementById("cardsActionStatus");
+      const n = accounts.length;
+      if (!n) { statusEl.textContent = "Already empty."; return; }
+      if (!confirm(`Remove all ${n} cards? Saved credentials and history go with them. This can't be undone.`)) return;
+      accounts = [];
+      activeFilter = "all";
+      persist();
+      render();
+      statusEl.textContent = `Removed ${n} card${n === 1 ? "" : "s"}.`;
+      statusEl.style.color = "var(--text-muted)";
+    });
+
+    document.getElementById("restoreExamplesBtn").addEventListener("click", () => {
+      const statusEl = document.getElementById("cardsActionStatus");
+      if (accounts.length && !confirm(`Add the example cards back alongside your existing ${accounts.length}?`)) return;
+      const seeded = seedMockData().map(normalizeAccount).filter(Boolean);
+      // Append rather than replace, so this can't wipe real cards.
+      accounts = accounts.concat(seeded);
+      persist();
+      render();
+      statusEl.textContent = `Added ${seeded.length} example cards.`;
+      statusEl.style.color = "var(--text-muted)";
     });
 
     document.getElementById("testBackendBtn").addEventListener("click", async () => {

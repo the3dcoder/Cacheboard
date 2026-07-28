@@ -28,6 +28,10 @@ Home Assistant cards can also *act* — toggles, scenes, setpoints and transport
 
 Double-click `index.html` and it runs — no build, no install.
 
+It opens with example cards so the page isn't blank. When you're ready for real data:
+**Settings → Cards → Remove all cards**, then add your own. *Restore examples* puts them
+back if you want the tour again.
+
 For OAuth-based cards (Azure, Twitch, Fitbit) you need a real `http(s)` origin, since OAuth
 providers can't redirect back to a `file://` URL. Easiest option:
 

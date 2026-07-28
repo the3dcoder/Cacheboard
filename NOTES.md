@@ -58,6 +58,18 @@ finance, home lab, social, and health. No backend, no build step, nothing to ins
 
 ---
 
+## Starting from scratch
+
+The dashboard ships example cards so a first run isn't an empty page. To clear them:
+**Settings → Cards → Remove all cards**. *Restore examples* appends them back (it never
+replaces what you've added).
+
+An empty dashboard is a **saved state**, not a missing one — clearing your cards sticks
+across reloads. Examples are only seeded when there's no stored data at all, i.e. a genuine
+first run or after clearing browser storage.
+
+---
+
 ## Running it
 
 Double-clicking `index.html` works for everything **except OAuth** (Azure, Twitch, Fitbit).
