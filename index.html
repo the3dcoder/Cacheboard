@@ -355,6 +355,7 @@
             <option value="">unchanged</option>
             <option value="depletion">Lower is better (% left)</option>
             <option value="growth">Higher is better (% of target)</option>
+            <option value="usage">Show % consumed (% used)</option>
           </select>
         </label>
         <label class="block text-sm mb-4">Unit label
@@ -419,6 +420,7 @@
         <option value="">Use the default for this account type</option>
         <option value="depletion">Lower is better &mdash; a quota or budget being used up</option>
         <option value="growth">Higher is better &mdash; progress toward a target</option>
+        <option value="usage">Show % consumed &mdash; a limit filling up (9% used)</option>
       </select>
       <span class="text-xs" style="color:var(--text-muted)" id="f_directionHint"></span>
     </label>
@@ -603,7 +605,7 @@
       accountTypes: [
         { value: "consumer", label: "Consumer subscription (Pro/Team)" },
         {
-          value: "api-key", label: "Anthropic API key", fetch: fetchClaudeUsage,
+          value: "api-key", label: "Anthropic API key", fetch: fetchClaudeUsage, direction: "usage",
           fields: [
             { key: "apiKey", label: "Anthropic API key", type: "password", placeholder: "sk-ant-...", required: true, full: true },
             { key: "anthropicMetric", label: "Metric", type: "select", options: [

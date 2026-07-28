@@ -648,7 +648,7 @@ async function readClaudeCodeUsage(tzOffsetMin = 0) {
 // The token is read at request time, used for exactly one outbound call, and
 // never logged, cached, or returned. Only integers reach the browser.
 const CLAUDE_CREDENTIALS_FILE = env.CLAUDE_CREDENTIALS_FILE || "";
-const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.219";
+const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.220";
 const PLAN_MIN_INTERVAL_MS = 180000;
 let planCache = { at: 0, data: null };
 

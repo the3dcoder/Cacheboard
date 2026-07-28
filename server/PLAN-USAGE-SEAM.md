@@ -54,7 +54,7 @@ In `server/.env`:
 ```
 CLAUDE_CREDENTIALS_FILE=/creds/.credentials.json
 CLAUDE_CREDENTIALS_HOST_FILE=C:/Users/you/.claude/.credentials.json
-CLAUDE_CODE_USER_AGENT=claude-code/2.1.219
+CLAUDE_CODE_USER_AGENT=claude-code/2.1.220
 ```
 
 In `server/docker-compose.yml`, under `volumes:`:
@@ -69,7 +69,7 @@ Paste immediately **above** the `const USAGE_SOURCES = {` line.
 
 ```js
 const CLAUDE_CREDENTIALS_FILE = env.CLAUDE_CREDENTIALS_FILE || "";
-const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.219";
+const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.220";
 const PLAN_MIN_INTERVAL_MS = 180000;
 let planCache = { at: 0, data: null };
 
