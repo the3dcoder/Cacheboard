@@ -236,6 +236,27 @@
   .entity-row:last-child { border-bottom: 0; }
   .entity-row:hover, .entity-row:focus-visible { background: var(--surface-2); }
   .entity-row .eid { color: var(--text-muted); font-size: .75rem; }
+  /* Added for the bulk bar and bulk-edit dialog. Vendored Tailwind has no
+     JIT, so every class used in markup needs a rule here or it silently
+     does nothing. */
+  .p-3 { padding: 0.75rem; }
+  .mb-1 { margin-bottom: 0.25rem; }
+  .rounded-xl { border-radius: 0.75rem; }
+  .max-w-md { max-width: 28rem; }
+  .z-50 { z-index: 50; }
+
+  .card-selected { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .bulk-check { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); cursor: pointer; }
+  .w-full { width: 100%; }
+
+  /* An armed button has to look unmistakably different from its resting
+     state — this is the only signal that a second click will commit. */
+  .armed {
+    background: var(--status-critical-text) !important;
+    color: #0d0d0d !important;
+    border-color: var(--status-critical-text) !important;
+    font-weight: 600;
+  }
   .findings ul { margin: 0; padding-left: 1rem; list-style: disc; }
   .findings li { margin-top: .125rem; word-break: break-word; }
   .control-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
@@ -263,6 +284,10 @@
               style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">
         Refresh stale
       </button>
+      <button id="selectModeBtn" type="button" class="text-sm font-medium px-3 py-2 rounded-lg" aria-pressed="false"
+              style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">
+        Select
+      </button>
       <button id="settingsBtn" type="button" class="text-sm font-medium px-3 py-2 rounded-lg"
               style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">
         Settings
@@ -281,6 +306,59 @@
 
 <main class="max-w-7xl mx-auto px-4 py-6">
   <div id="summaryStrip" class="mb-4 flex flex-wrap items-center gap-2 text-xs"></div>
+
+  <!-- Bulk bar. Hidden until Select mode is on; acts on the current
+       selection only, never on the whole filtered set by surprise. -->
+  <div id="bulkBar" class="hidden mb-4 p-3 rounded-xl flex flex-wrap items-center gap-2"
+       style="background:var(--surface-2); border:1px solid var(--border-strong);">
+    <span id="bulkCount" class="text-sm font-medium" style="color:var(--text-primary)">0 selected</span>
+    <button type="button" id="bulkSelectAllBtn" class="text-xs px-2 py-1 rounded-lg"
+            style="background:var(--surface-1); color:var(--text-secondary); border:1px solid var(--border-strong);">Select all shown</button>
+    <button type="button" id="bulkSelectNoneBtn" class="text-xs px-2 py-1 rounded-lg"
+            style="background:var(--surface-1); color:var(--text-secondary); border:1px solid var(--border-strong);">Clear</button>
+    <span class="flex-1"></span>
+    <button type="button" id="bulkRefreshBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+            style="background:var(--surface-1); color:var(--text-secondary); border:1px solid var(--border-strong);">Refresh</button>
+    <button type="button" id="bulkEditBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+            style="background:var(--surface-1); color:var(--text-secondary); border:1px solid var(--border-strong);">Edit&hellip;</button>
+    <button type="button" id="bulkDeleteBtn" class="text-xs font-medium px-3 py-2 rounded-lg"
+            style="background:var(--status-critical-bg); color:var(--status-critical-text); border:1px solid var(--border-strong);">Delete</button>
+    <span id="bulkStatus" class="text-xs w-full" style="color:var(--text-muted)"></span>
+  </div>
+
+  <!-- Bulk edit. Every field is opt-in: blank means "leave this alone",
+       so one dialog can change targets without touching intervals. -->
+  <div id="bulkOverlay" class="hidden fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.6);">
+    <div class="modal-panel rounded-2xl w-full max-w-md p-5 my-8" role="dialog" aria-modal="true" aria-labelledby="bulkEditTitle">
+      <h2 id="bulkEditTitle" class="text-base font-semibold mb-1">Edit selected cards</h2>
+      <p class="text-xs mb-4" style="color:var(--text-muted)">
+        Leave a field blank to leave it unchanged. Applies to <span id="bulkEditCount">0</span> card(s).
+      </p>
+      <form id="bulkEditForm">
+        <label class="block text-sm mb-3">Total limit / target
+          <input type="number" id="b_totalLimit" step="any" min="0" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="unchanged">
+        </label>
+        <label class="block text-sm mb-3">Reset every (hours)
+          <input type="number" id="b_cycleHours" step="any" min="0.001" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="unchanged">
+        </label>
+        <label class="block text-sm mb-3">Direction
+          <select id="b_direction" class="w-full rounded-lg px-3 py-2 mt-1 text-sm">
+            <option value="">unchanged</option>
+            <option value="depletion">Lower is better (% left)</option>
+            <option value="growth">Higher is better (% of target)</option>
+          </select>
+        </label>
+        <label class="block text-sm mb-4">Unit label
+          <input type="text" id="b_unit" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="unchanged">
+        </label>
+        <p id="bulkEditError" class="hidden text-xs mb-3" style="color:var(--status-critical-text)"></p>
+        <div class="flex items-center justify-end gap-2 modal-actions">
+          <button type="button" id="bulkEditCancelBtn" class="text-sm px-3 py-2 rounded-lg" style="color:var(--text-secondary); background:var(--surface-2);">Cancel</button>
+          <button type="submit" class="text-sm font-medium px-4 py-2 rounded-lg" style="background:var(--accent); color:#0d0d0d;">Apply</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <div id="cardGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start"></div>
   <div id="emptyState" class="hidden text-center py-16" style="color:var(--text-muted)">
     No accounts yet &mdash; click <span style="color:var(--text-secondary)">Add Account</span> to get started.
@@ -1574,6 +1652,76 @@
     };
   }
 
+  // ---------------------------------------------------------------------
+  // In-page confirmation.
+  //
+  // window.confirm() is not dependable: browsers suppress it after repeated
+  // dialogs ("prevent this page from creating additional dialogs"), inside
+  // embedded views, and under automation. A suppressed confirm returns
+  // FALSE, so every `if (!confirm(...)) return;` silently became "do
+  // nothing" — the button looked broken with no error and no feedback.
+  //
+  // Click once to arm (the button relabels and explains), click again to
+  // commit. Auto-disarms after a few seconds so a stray click can't leave a
+  // destructive button primed.
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+  // Bulk selection.
+  //
+  // Deliberately session-only: selection is never persisted, so a reload
+  // can't leave a stale set armed for deletion. Selected ids are pruned
+  // against live accounts on every read, because a card can disappear
+  // (deleted elsewhere, dropped by normalizeAccount) while still selected.
+  // ---------------------------------------------------------------------
+  let selectMode = false;
+  const selectedIds = new Set();
+
+  function selectedAccounts() {
+    return accounts.filter(a => selectedIds.has(a.id));
+  }
+
+  function pruneSelection() {
+    const live = new Set(accounts.map(a => a.id));
+    for (const id of [...selectedIds]) if (!live.has(id)) selectedIds.delete(id);
+  }
+
+  const armedButtons = new WeakMap();
+  const ARM_TIMEOUT_MS = 6000;
+
+  function disarm(btn) {
+    const state = armedButtons.get(btn);
+    if (!state) return null;
+    clearTimeout(state.timer);
+    armedButtons.delete(btn);
+    btn.textContent = state.label;
+    btn.classList.remove("armed");
+    return state;
+  }
+
+  function armAction(btn, statusEl, armedLabel, message, onConfirm) {
+    if (armedButtons.get(btn)) {
+      disarm(btn);
+      if (statusEl) statusEl.textContent = "";
+      onConfirm();
+      return;
+    }
+    const label = btn.textContent;
+    btn.textContent = armedLabel;
+    btn.classList.add("armed");
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.style.color = "var(--status-critical-text)";
+    }
+    const timer = setTimeout(() => {
+      disarm(btn);
+      if (statusEl && statusEl.textContent === message) {
+        statusEl.textContent = "";
+        statusEl.style.color = "var(--text-muted)";
+      }
+    }, ARM_TIMEOUT_MS);
+    armedButtons.set(btn, { label, timer });
+  }
+
   // Real refresh: local Claude Code usage.
   //
   // This is the only card family that measures your *subscription* LLM usage
@@ -2347,12 +2495,17 @@
   // card can never sit showing the pre-action state. This is what makes
   // polling acceptable for controls: the card you just touched is always
   // current, even if entities changed elsewhere lag by a few seconds.
-  async function runControlAction(id, index) {
+  async function runControlAction(id, index, btn) {
     const acc = accounts.find(a => a.id === id);
     if (!acc || acc._acting) return;
     const action = controlActionsFor(acc)[index];
     if (!action) return;
-    if (action.confirm && !confirm(action.confirm)) return;
+    // Same suppressed-dialog trap as the delete buttons: a blocked confirm()
+    // returned false, so "Unlock" silently did nothing. Arm in place instead.
+    if (action.confirm && btn && !armedButtons.get(btn)) {
+      return armAction(btn, null, "Confirm?", "", () => runControlAction(id, index, btn));
+    }
+    if (btn) disarm(btn);
 
     acc._acting = true;
     render();
@@ -2793,12 +2946,16 @@
           style="background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-strong);">Update</button>`;
 
     return `
-    <div class="card rounded-2xl p-4 flex flex-col gap-3" data-card-id="${escapeHtml(acc.id)}">
+    <div class="card rounded-2xl p-4 flex flex-col gap-3${selectMode && selectedIds.has(acc.id) ? " card-selected" : ""}" data-card-id="${escapeHtml(acc.id)}">
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
+          ${selectMode ? `
+          <input type="checkbox" class="bulk-check shrink-0" data-id="${escapeHtml(acc.id)}"
+                 ${selectedIds.has(acc.id) ? "checked" : ""}
+                 aria-label="Select ${escapeHtml(acc.name)}">` : `
           <span class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style="background:${platformTint(acc.platform)}; color:${platformHue(acc.platform)}" aria-hidden="true">
             ${platformIcon(acc.platform)}
-          </span>
+          </span>`}
           <div class="min-w-0">
             <h3 class="text-sm font-medium truncate" id="${cardTitleId}" title="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</h3>
             <div class="text-xs truncate" style="color:var(--text-muted)">${meta.label} &middot; ${typeMeta ? typeMeta.label : escapeHtml(acc.accountType)}</div>
@@ -3342,6 +3499,8 @@
     document.getElementById("modalOverlay").classList.add("hidden");
     document.body.classList.remove("modal-open");
     setFormError("");
+    // Never leave Delete primed for the next account opened in this modal.
+    disarm(document.getElementById("deleteAccountBtn"));
     if (lastFocusedBeforeModal && document.contains(lastFocusedBeforeModal)) {
       lastFocusedBeforeModal.focus();
     }
@@ -3410,17 +3569,23 @@
     toast(`${account.name} saved.`, "success");
   }
 
-  function deleteAccount() {
+  function deleteAccount(btn) {
     const id = document.getElementById("f_id").value;
     if (!id) return;
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
-    if (!confirm(`Delete "${acc.name}"? This can't be undone.`)) return;
-    accounts = accounts.filter(a => a.id !== id);
-    persist();
-    closeModal();
-    render();
-    toast(`${acc.name} deleted.`, "default");
+    const commit = () => {
+      accounts = accounts.filter(a => a.id !== id);
+      persist();
+      closeModal();
+      render();
+      toast(`${acc.name} deleted.`, "default");
+    };
+    // Arm in place when we have the button; fall back to deleting outright
+    // rather than silently doing nothing, which is what the old confirm()
+    // did whenever the browser suppressed its dialog.
+    if (!btn) return commit();
+    armAction(btn, null, "Click again to delete", "", commit);
   }
 
   // ---------------------------------------------------------------------
@@ -3455,7 +3620,7 @@
     document.getElementById("cancelModalBtn").addEventListener("click", closeModal);
     document.getElementById("modalOverlay").addEventListener("click", (e) => { if (e.target.id === "modalOverlay") closeModal(); });
     document.getElementById("accountForm").addEventListener("submit", saveAccountForm);
-    document.getElementById("deleteAccountBtn").addEventListener("click", deleteAccount);
+    document.getElementById("deleteAccountBtn").addEventListener("click", (e) => deleteAccount(e.currentTarget));
 
     document.getElementById("f_platform").addEventListener("change", (e) => {
       const platform = e.target.value;
@@ -3545,32 +3710,232 @@
       }
     });
 
+    // ----- Bulk selection -------------------------------------------------
+    const bulkBar = document.getElementById("bulkBar");
+    const bulkStatus = document.getElementById("bulkStatus");
+
+    function setBulkStatus(msg, bad) {
+      bulkStatus.textContent = msg || "";
+      bulkStatus.style.color = bad ? "var(--status-critical-text)" : "var(--text-muted)";
+    }
+
+    function syncBulkBar() {
+      pruneSelection();
+      const n = selectedIds.size;
+      document.getElementById("bulkCount").textContent =
+        `${n} selected` + (n ? "" : " — tick cards to choose");
+      ["bulkRefreshBtn", "bulkEditBtn", "bulkDeleteBtn"].forEach(id => {
+        const b = document.getElementById(id);
+        b.disabled = n === 0;
+        b.style.opacity = n === 0 ? "0.5" : "1";
+        if (n === 0) disarm(b);
+      });
+      bulkBar.classList.toggle("hidden", !selectMode);
+    }
+
+    function setSelectMode(on) {
+      selectMode = on;
+      const btn = document.getElementById("selectModeBtn");
+      btn.setAttribute("aria-pressed", String(on));
+      btn.textContent = on ? "Done" : "Select";
+      btn.style.background = on ? "var(--accent)" : "var(--surface-2)";
+      btn.style.color = on ? "#0d0d0d" : "var(--text-secondary)";
+      if (!on) { selectedIds.clear(); setBulkStatus(""); }
+      syncBulkBar();
+      render();
+    }
+
+    document.getElementById("selectModeBtn").addEventListener("click", () => setSelectMode(!selectMode));
+
+    // Checkbox clicks are caught on the grid so they survive re-renders.
+    document.getElementById("cardGrid").addEventListener("change", (e) => {
+      const box = e.target.closest(".bulk-check");
+      if (!box) return;
+      if (box.checked) selectedIds.add(box.dataset.id);
+      else selectedIds.delete(box.dataset.id);
+      const card = box.closest("[data-card-id]");
+      if (card) card.classList.toggle("card-selected", box.checked);
+      syncBulkBar();
+    });
+
+    // "Shown" means what's actually on screen under the current filter —
+    // selecting things the user can't see would be a trap.
+    document.getElementById("bulkSelectAllBtn").addEventListener("click", () => {
+      [...document.querySelectorAll("[data-card-id]")].forEach(c => selectedIds.add(c.dataset.cardId));
+      render();
+      syncBulkBar();
+      setBulkStatus(`${selectedIds.size} selected.`);
+    });
+
+    document.getElementById("bulkSelectNoneBtn").addEventListener("click", () => {
+      selectedIds.clear();
+      render();
+      syncBulkBar();
+    });
+
+    document.getElementById("bulkDeleteBtn").addEventListener("click", (e) => {
+      const list = selectedAccounts();
+      if (!list.length) return;
+      armAction(
+        e.currentTarget, bulkStatus,
+        `Delete ${list.length}?`,
+        `Click again to delete ${list.length} card${list.length === 1 ? "" : "s"} — credentials and history go too. This can't be undone.`,
+        () => {
+          const n = list.length;
+          accounts = accounts.filter(a => !selectedIds.has(a.id));
+          selectedIds.clear();
+          persist();
+          render();
+          syncBulkBar();
+          setBulkStatus(`Deleted ${n} card${n === 1 ? "" : "s"}.`);
+          toast(`Deleted ${n} card${n === 1 ? "" : "s"}.`, "default");
+        }
+      );
+    });
+
+    document.getElementById("bulkRefreshBtn").addEventListener("click", async () => {
+      const live = selectedAccounts().filter(isRealType);
+      const skipped = selectedIds.size - live.length;
+      if (!live.length) {
+        return setBulkStatus("None of the selected cards are live — manual cards have nothing to fetch.", true);
+      }
+      setBulkStatus(`Refreshing ${live.length}…`);
+      // Sequential on purpose: refreshAccount guards against concurrent runs
+      // per account, and firing everything at once would hammer the APIs.
+      let ok = 0, failed = 0;
+      for (const acc of live) {
+        try { await refreshAccount(acc.id); ok++; } catch (e) { failed++; }
+      }
+      setBulkStatus(
+        `Refreshed ${ok}${failed ? `, ${failed} failed` : ""}` +
+        `${skipped ? `, ${skipped} manual skipped` : ""}.`, failed > 0);
+    });
+
+    // ----- Bulk edit ------------------------------------------------------
+    const bulkOverlay = document.getElementById("bulkOverlay");
+
+    function closeBulkEdit() {
+      bulkOverlay.classList.add("hidden");
+      document.body.classList.remove("modal-open");
+      document.getElementById("bulkEditError").classList.add("hidden");
+    }
+
+    document.getElementById("bulkEditBtn").addEventListener("click", () => {
+      if (!selectedIds.size) return;
+      document.getElementById("bulkEditCount").textContent = String(selectedIds.size);
+      ["b_totalLimit", "b_cycleHours", "b_unit"].forEach(id => { document.getElementById(id).value = ""; });
+      document.getElementById("b_direction").value = "";
+      document.getElementById("bulkEditError").classList.add("hidden");
+      bulkOverlay.classList.remove("hidden");
+      document.body.classList.add("modal-open");
+      document.getElementById("b_totalLimit").focus();
+    });
+
+    document.getElementById("bulkEditCancelBtn").addEventListener("click", closeBulkEdit);
+    bulkOverlay.addEventListener("click", (e) => { if (e.target === bulkOverlay) closeBulkEdit(); });
+
+    document.getElementById("bulkEditForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const err = document.getElementById("bulkEditError");
+      const raw = {
+        totalLimit: document.getElementById("b_totalLimit").value.trim(),
+        cycleHours: document.getElementById("b_cycleHours").value.trim(),
+        direction:  document.getElementById("b_direction").value,
+        unit:       document.getElementById("b_unit").value.trim()
+      };
+
+      const patch = {};
+      if (raw.totalLimit !== "") {
+        const v = Number(raw.totalLimit);
+        if (!Number.isFinite(v) || v <= 0) {
+          err.textContent = "Total limit must be a positive number.";
+          return err.classList.remove("hidden");
+        }
+        patch.totalLimit = v;
+      }
+      if (raw.cycleHours !== "") {
+        const v = Number(raw.cycleHours);
+        if (!Number.isFinite(v) || v <= 0) {
+          err.textContent = "Reset interval must be a positive number of hours.";
+          return err.classList.remove("hidden");
+        }
+        const ms = v * 3600 * 1000;
+        if (ms > MAX_RESET_INTERVAL_MS) {
+          err.textContent = "That reset interval is too large.";
+          return err.classList.remove("hidden");
+        }
+        patch.resetIntervalMs = ms;
+      }
+      if (raw.direction) patch.direction = raw.direction;
+      if (raw.unit !== "") patch.unit = raw.unit;
+
+      if (!Object.keys(patch).length) {
+        err.textContent = "Nothing to change — fill in at least one field.";
+        return err.classList.remove("hidden");
+      }
+
+      const targets = selectedAccounts();
+      targets.forEach(acc => Object.assign(acc, patch));
+      persist();
+      closeBulkEdit();
+      render();
+      syncBulkBar();
+      const changed = Object.keys(patch).length;
+      setBulkStatus(`Updated ${changed} field${changed === 1 ? "" : "s"} on ${targets.length} card${targets.length === 1 ? "" : "s"}.`);
+      toast(`Updated ${targets.length} card${targets.length === 1 ? "" : "s"}.`, "success");
+    });
+
+    syncBulkBar();
+
     // A fresh install ships example cards so the page isn't blank, but there
     // was no way to get rid of them — which made "start using this for real"
     // a 31-click chore.
+    //
+    // These used to call window.confirm(). Browsers suppress that dialog in
+    // several situations (the "prevent additional dialogs" checkbox, embedded
+    // views, some automation), and a suppressed confirm returns FALSE — so the
+    // handler returned early and the button did nothing at all, with no
+    // feedback. A destructive action must never depend on a dialog we don't
+    // control, so confirmation is now in-page: click once to arm, again to go.
     document.getElementById("clearCardsBtn").addEventListener("click", () => {
       const statusEl = document.getElementById("cardsActionStatus");
       const n = accounts.length;
       if (!n) { statusEl.textContent = "Already empty."; return; }
-      if (!confirm(`Remove all ${n} cards? Saved credentials and history go with them. This can't be undone.`)) return;
-      accounts = [];
-      activeFilter = "all";
-      persist();
-      render();
-      statusEl.textContent = `Removed ${n} card${n === 1 ? "" : "s"}.`;
-      statusEl.style.color = "var(--text-muted)";
+      armAction(
+        document.getElementById("clearCardsBtn"),
+        statusEl,
+        `Remove all ${n}?`,
+        `Click again to remove all ${n} cards — saved credentials and history go too. This can't be undone.`,
+        () => {
+          accounts = [];
+          activeFilter = "all";
+          persist();
+          render();
+          statusEl.textContent = `Removed ${n} card${n === 1 ? "" : "s"}.`;
+        }
+      );
     });
 
     document.getElementById("restoreExamplesBtn").addEventListener("click", () => {
       const statusEl = document.getElementById("cardsActionStatus");
-      if (accounts.length && !confirm(`Add the example cards back alongside your existing ${accounts.length}?`)) return;
-      const seeded = seedMockData().map(normalizeAccount).filter(Boolean);
-      // Append rather than replace, so this can't wipe real cards.
-      accounts = accounts.concat(seeded);
-      persist();
-      render();
-      statusEl.textContent = `Added ${seeded.length} example cards.`;
-      statusEl.style.color = "var(--text-muted)";
+      const add = () => {
+        const seeded = seedMockData().map(normalizeAccount).filter(Boolean);
+        // Append rather than replace, so this can't wipe real cards.
+        accounts = accounts.concat(seeded);
+        persist();
+        render();
+        statusEl.textContent = `Added ${seeded.length} example cards.`;
+      };
+      // Adding is non-destructive, so only arm it when it would bulk up a
+      // dashboard the user has already populated.
+      if (!accounts.length) return add();
+      armAction(
+        document.getElementById("restoreExamplesBtn"),
+        statusEl,
+        "Add anyway?",
+        `Click again to add the example cards alongside your existing ${accounts.length}.`,
+        add
+      );
     });
 
     document.getElementById("testBackendBtn").addEventListener("click", async () => {
@@ -3699,7 +4064,7 @@
     document.getElementById("cardGrid").addEventListener("click", (e) => {
       const controlBtn = e.target.closest(".control-btn");
       if (controlBtn) {
-        runControlAction(controlBtn.dataset.id, Number(controlBtn.dataset.actionIndex));
+        runControlAction(controlBtn.dataset.id, Number(controlBtn.dataset.actionIndex), controlBtn);
         return;
       }
       const dismiss = e.target.closest(".dismiss-error");
