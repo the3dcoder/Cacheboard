@@ -18,6 +18,7 @@ One `index.html`. No build step, no install, no backend.
 | **Home lab** | Home Assistant — sensors *and* controls (lights, locks, covers, scenes, climate, media, cameras); generic JSON metrics from any local device |
 | **Social** | YouTube, GitHub stars, Discord, Twitch |
 | **Health** | Fitbit (live), manual entry for Pixel Watch |
+| **Claude Code** | Local subscription LLM usage — tokens, messages and equivalent API cost, per period, per model (Fable tracked separately). Free to read; no API calls |
 | **Security** | Open-port drift vs a baseline, certificate expiry, missing security headers — your own hosts only |
 
 Each card shows a live progress bar, a status badge, a countdown to reset, a sparkline of

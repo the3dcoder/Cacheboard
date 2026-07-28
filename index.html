@@ -518,7 +518,11 @@
         {
           value: "api-key", label: "Anthropic API key", fetch: fetchClaudeUsage,
           fields: [
-            { key: "apiKey", label: "Anthropic API key", type: "password", placeholder: "sk-ant-...", required: true, full: true }
+            { key: "apiKey", label: "Anthropic API key", type: "password", placeholder: "sk-ant-...", required: true, full: true },
+            { key: "anthropicMetric", label: "Metric", type: "select", options: [
+              ["input", "Input tokens / min"], ["output", "Output tokens / min"],
+              ["requests", "Requests / min"], ["tokens", "Combined tokens / min (legacy)"]
+            ] }
           ],
           help: "Stored only in this browser's local storage and sent only directly to Anthropic when you click Refresh. Anyone with access to this file/browser can read it via dev tools — treat it like a password, and prefer a low-limit or restricted key."
         }
@@ -846,6 +850,37 @@
       ],
       note: "Continuous self-assessment of your own network, run by the backend companion — a browser can't open raw sockets or complete a TLS handshake against another host. Every target is read from the server's .env, never from this page, so a card can only ever check hosts you listed yourself. All three checks are passive: a TCP connect, a TLS handshake, an HTTP GET. Nothing is exploited, nothing is written to. Tool-based checks (arp-scan for new devices, nuclei, IDS log parsing) need binaries and host networking the container doesn't have — server/README.md documents how to add them."
     },
+    claudecode: {
+      label: "Claude Code",
+      icon: '<path d="M7 8l-3 4 3 4M17 8l3 4-3 4M13.5 6l-3 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+      hue: "#d97757",
+      accountTypes: [
+        {
+          value: "usage", label: "Local usage (tokens, cost, per model)", fetch: fetchClaudeCodeUsage,
+          fields: [
+            { key: "ccMetric", label: "Metric", type: "select", options: [
+              ["output", "Output tokens"], ["input", "Input tokens"],
+              ["cacheRead", "Cache reads"], ["cacheWrite", "Cache writes"],
+              ["totalTokens", "All tokens"], ["messages", "Messages"],
+              ["cost", "Equivalent API cost ($)"]
+            ] },
+            { key: "ccPeriod", label: "Period", type: "select", options: [
+              ["today", "Today"], ["week", "Last 7 days"],
+              ["month", "Last 30 days"], ["all", "All time"]
+            ] },
+            { key: "ccModel", label: "Model", type: "select", full: true, options: [
+              ["all", "All models"], ["claude-fable-5", "Fable 5"],
+              ["claude-opus-5", "Opus 5"], ["claude-sonnet-5", "Sonnet 5"],
+              ["claude-haiku-4-5", "Haiku 4.5"], ["claude-opus-4-8", "Opus 4.8"]
+            ] },
+            { key: "ccNote", type: "hidden" }
+          ],
+          help: "Reads Claude Code's local session transcripts through the backend — no API calls, no spend. Set CLAUDE_PROJECTS_HOST_DIR in server/.env to your ~/.claude/projects folder; the mount is read-only and only timestamps, model names and token counts are ever parsed. \"Total limit\" is a target you pick, because Anthropic doesn't publish the 5-hour or weekly caps anywhere machine-readable."
+        }
+      ],
+      note: "Measures your subscription LLM usage, not API spend — the two are separate systems. Add one card per view: Fable output tokens this week, all-model cost today, and so on. Covers Claude Code only; claude.ai web and mobile chat usage isn't written to these files. \"Equivalent API cost\" is what the same tokens would have cost at API rates — useful for judging what your plan is worth, not a bill you'll receive."
+    },
+
     health: {
       label: "Health",
       icon: '<path d="M12 20s-7-4.4-9.3-8.8C1.3 8 3 5 6.2 5c2 0 3.4 1.2 4.3 2.6C11.4 6.2 12.8 5 14.8 5 18 5 19.7 8 18.3 11.2 16 15.6 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="1.5"/>',
@@ -1052,6 +1087,15 @@
     ["Front Door",                     "homeassistant", "status",         100,     0,      "",                      NEVER, NEVER, { entityId: "binary_sensor.front_door" }],
     ["Living Room Thermostat",         "homeassistant", "climate",        100,     0,      "",                      NEVER, NEVER, { entityId: "climate.living_room", climateStep: "1" }],
     ["Pi-hole — DNS Queries Today",    "homelab",       "json-metric",    100000,  42000,  "queries",               NEVER, NEVER, { homelabPath: "dns_queries_today" }],
+    // Cache reads dwarf everything else (hundreds of millions a day is
+    // normal), so an "all tokens" target has to be sized for that or the
+    // card reads Exhausted from the first refresh.
+    ["Claude Code — all tokens today", "claudecode",    "usage",          2000000000, 0,   "tokens",                NEVER, NEVER,
+      { ccMetric: "totalTokens", ccPeriod: "today", ccModel: "all" }],
+    ["Claude Code — Fable this week",  "claudecode",    "usage",          500000,  0,      "tokens",                NEVER, NEVER,
+      { ccMetric: "output", ccPeriod: "week", ccModel: "claude-fable-5" }],
+    ["Claude Code — value this week",  "claudecode",    "usage",          1000,    0,      "$",                     NEVER, NEVER,
+      { ccMetric: "cost", ccPeriod: "week", ccModel: "all" }],
     ["Open-port drift",                "security",      "port-drift",     5,       0,      "changes",               NEVER, NEVER],
     ["Certificate expiry",             "security",      "tls-expiry",     90,      90,     "days",                  NEVER, NEVER],
     ["Security headers",               "security",      "http-headers",   10,      0,      "missing",               NEVER, NEVER],
@@ -1530,6 +1574,73 @@
     };
   }
 
+  // Real refresh: local Claude Code usage.
+  //
+  // This is the only card family that measures your *subscription* LLM usage
+  // rather than API spend, and it costs nothing to read — Claude Code already
+  // writes per-message token counts and model names to local transcripts.
+  //
+  // What it deliberately does NOT show: your 5-hour or weekly cap. Claude Code
+  // publishes usage over OpenTelemetry only, and the limits themselves aren't
+  // published anywhere, so the denominator here is a target you choose.
+  const CC_METRIC_LABELS = {
+    output:      ["Output tokens", "tokens"],
+    input:       ["Input tokens", "tokens"],
+    cacheRead:   ["Cache reads", "tokens"],
+    cacheWrite:  ["Cache writes", "tokens"],
+    totalTokens: ["All tokens", "tokens"],
+    messages:    ["Messages", "messages"],
+    cost:        ["Equivalent API cost", "$"]
+  };
+  const CC_PERIOD_LABELS = { today: "today", week: "last 7 days", month: "last 30 days", all: "all time" };
+
+  async function fetchClaudeCodeUsage(acc) {
+    // The container has no idea what timezone you're in; without this it
+    // computes "today" in UTC and a late-evening refresh reports a nearly
+    // empty day. The browser's clock is the only correct authority.
+    const tz = new Date().getTimezoneOffset();
+    const res = await backendRequest(`/usage/claude-code?tzOffsetMin=${encodeURIComponent(tz)}`);
+    const data = await res.json().catch(() => null);
+    if (!data) throw new Error("Backend returned an unreadable usage result.");
+    if (data.error) throw new Error(data.error);
+
+    const metric = acc.ccMetric || "output";
+    const period = acc.ccPeriod || "today";
+    const model = acc.ccModel || "all";
+
+    const bucket = model === "all"
+      ? (data.totals && data.totals[period])
+      : (data.byModel && data.byModel[period] && data.byModel[period][model]);
+
+    // A model with no activity in the window is a real answer (zero), not an
+    // error — but a missing period means the server shape changed.
+    if (model !== "all" && !bucket) {
+      if (!data.byModel || !data.byModel[period]) {
+        throw new Error(`Backend returned no "${period}" bucket.`);
+      }
+      return usageResult(acc, 0, metric, period, model);
+    }
+    if (!bucket) throw new Error(`Backend returned no "${period}" bucket.`);
+
+    const value = metric === "totalTokens"
+      ? (bucket.input || 0) + (bucket.output || 0) + (bucket.cacheRead || 0) + (bucket.cacheWrite || 0)
+      : Number(bucket[metric]);
+    if (!Number.isFinite(value)) throw new Error(`Backend returned no "${metric}" value.`);
+    return usageResult(acc, value, metric, period, model);
+  }
+
+  function usageResult(acc, value, metric, period, model) {
+    const [, unit] = CC_METRIC_LABELS[metric] || ["", "tokens"];
+    return {
+      totalLimit: acc.totalLimit,
+      // Cost is the one metric where fractions matter; tokens are whole.
+      used: metric === "cost" ? Math.round(value * 100) / 100 : Math.round(value),
+      unit,
+      resetTime: acc.resetTime,
+      _ccScope: `${CC_PERIOD_LABELS[period] || period}${model === "all" ? "" : " · " + model.replace(/^claude-/, "")}`
+    };
+  }
+
   // Declarations, not `const` arrows: PLATFORMS is a const initialised
   // earlier in the file and references these by name. Function declarations
   // hoist; a const arrow would still be in its temporal dead zone, and the
@@ -1588,24 +1699,46 @@
       })
     });
 
-    const limitHeader = res.headers.get("anthropic-ratelimit-tokens-limit");
-    const remainingHeader = res.headers.get("anthropic-ratelimit-tokens-remaining");
-    const resetHeader = res.headers.get("anthropic-ratelimit-tokens-reset");
+    // Anthropic splits token rate limits into input and output counters. The
+    // combined `-tokens-` header is legacy and can come back as 0 on newer
+    // keys, which produced a permanent "0.0% left" because a zero limit makes
+    // the percentage non-finite. Pick whichever family the account actually
+    // reports, and treat a zero limit as no answer rather than as empty.
+    const families = {
+      requests: "anthropic-ratelimit-requests",
+      input:    "anthropic-ratelimit-input-tokens",
+      output:   "anthropic-ratelimit-output-tokens",
+      tokens:   "anthropic-ratelimit-tokens"
+    };
+    const wanted = acc.anthropicMetric || "input";
+    const order = [wanted, "input", "output", "tokens", "requests"];
 
-    if (limitHeader === null || remainingHeader === null) {
+    let limit = null, remaining = null, resetHeader = null, usedFamily = null;
+    for (const name of order) {
+      const prefix = families[name];
+      if (!prefix) continue;
+      const l = Number(res.headers.get(`${prefix}-limit`));
+      const r = Number(res.headers.get(`${prefix}-remaining`));
+      if (Number.isFinite(l) && l > 0 && Number.isFinite(r)) {
+        limit = l; remaining = r; usedFamily = name;
+        resetHeader = res.headers.get(`${prefix}-reset`);
+        break;
+      }
+    }
+
+    if (limit === null) {
       if (!res.ok) {
         let msg = `HTTP ${res.status}`;
         try { const body = await res.json(); msg = (body && body.error && body.error.message) || msg; } catch (e) {}
         throw new Error(`Anthropic request failed: ${msg}`);
       }
-      throw new Error("Anthropic responded but didn't expose rate-limit headers to this browser request (CORS Access-Control-Expose-Headers). Numbers left unchanged.");
+      throw new Error("Anthropic responded but exposed no usable rate-limit headers (all limits were absent or zero). Numbers left unchanged.");
     }
 
-    const limit = Number(limitHeader);
-    const remaining = Number(remainingHeader);
     return {
       totalLimit: limit,
       used: Math.max(0, limit - remaining),
+      unit: usedFamily === "requests" ? "requests" : "tokens",
       resetTime: resetHeader ? new Date(resetHeader).toISOString() : acc.resetTime
     };
   }
@@ -3167,6 +3300,7 @@
     "social/twitch":            { unit: "followers", totalLimit: 1000, hours: 876000 },
     "homeassistant/sensor":     { unit: "units", totalLimit: 100, hours: 876000 },
     "homelab/json-metric":      { unit: "units", totalLimit: 100, hours: 876000 },
+    "claudecode/usage":         { unit: "tokens", totalLimit: 5000000, hours: 876000 },
     "security/port-drift":      { unit: "changes", totalLimit: 5, hours: 876000 },
     "security/tls-expiry":      { unit: "days", totalLimit: 90, hours: 876000 },
     "security/http-headers":    { unit: "missing", totalLimit: 10, hours: 876000 },

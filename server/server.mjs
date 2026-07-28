@@ -461,6 +461,176 @@ function httpsRequest(urlString, { method = "GET", headers = {}, body = null } =
 // ---------------------------------------------------------------------------
 // Route: /proxy/<provider>/<path...>
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Local LLM usage: Claude Code transcripts
+//
+// Claude Code writes a JSONL transcript per session. Each assistant line
+// carries `message.model` and `message.usage` — so real per-model token
+// consumption is already on disk, for free. There is no API for this: Claude
+// Code publishes usage over OpenTelemetry only, and the 5-hour / weekly caps
+// aren't published anywhere at all. Consumption we can measure; the ceiling
+// we cannot, which is why cards here compare against a target you set.
+//
+// PRIVACY: this parser reads three things per line — timestamp, model, and
+// the numeric usage counters. Message content is never read into a variable,
+// never aggregated, and never leaves the process. The endpoint returns
+// integers only.
+const USAGE_DIR = env.CLAUDE_PROJECTS_DIR || "";
+
+// $ per million tokens. cache reads bill ~0.1x input, cache writes ~1.25x.
+const MODEL_PRICES = {
+  "claude-fable-5":   { in: 10, out: 50 },
+  "claude-mythos-5":  { in: 10, out: 50 },
+  "claude-opus-5":    { in: 5,  out: 25 },
+  "claude-opus-4-8":  { in: 5,  out: 25 },
+  "claude-opus-4-7":  { in: 5,  out: 25 },
+  "claude-sonnet-5":  { in: 3,  out: 15 },
+  "claude-sonnet-4-6":{ in: 3,  out: 15 },
+  "claude-haiku-4-5": { in: 1,  out: 5  }
+};
+
+function priceFor(model) {
+  if (MODEL_PRICES[model]) return MODEL_PRICES[model];
+  // Unknown//future model: fall back by family so cost stays a useful
+  // estimate instead of silently reading zero.
+  if (/fable|mythos/.test(model)) return MODEL_PRICES["claude-fable-5"];
+  if (/opus/.test(model))         return MODEL_PRICES["claude-opus-5"];
+  if (/haiku/.test(model))        return MODEL_PRICES["claude-haiku-4-5"];
+  if (/sonnet/.test(model))       return MODEL_PRICES["claude-sonnet-5"];
+  return null;
+}
+
+function emptyBucket() {
+  return { messages: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
+}
+
+function addUsage(bucket, u, model) {
+  const inTok    = Number(u.input_tokens) || 0;
+  const outTok   = Number(u.output_tokens) || 0;
+  const cacheR   = Number(u.cache_read_input_tokens) || 0;
+  const cacheW   = Number(u.cache_creation_input_tokens) || 0;
+  bucket.messages += 1;
+  bucket.input += inTok;
+  bucket.output += outTok;
+  bucket.cacheRead += cacheR;
+  bucket.cacheWrite += cacheW;
+  const p = priceFor(model);
+  if (p) {
+    bucket.cost += (inTok * p.in + cacheR * p.in * 0.1 + cacheW * p.in * 1.25 + outTok * p.out) / 1e6;
+  }
+}
+
+// Re-parsing ~13 MB on every 30s refresh would be wasteful, so results are
+// cached and only invalidated when a transcript's size or mtime changes.
+let usageCache = { key: "", at: 0, data: null };
+
+async function listTranscripts(dir) {
+  const out = [];
+  async function walk(d, depth) {
+    if (depth > 6) return;
+    let entries;
+    try { entries = await fsp.readdir(d, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) await walk(full, depth + 1);
+      else if (e.isFile() && e.name.endsWith(".jsonl")) out.push(full);
+    }
+  }
+  await walk(dir, 0);
+  return out;
+}
+
+// `tzOffsetMin` is the browser's Date#getTimezoneOffset() — minutes that UTC
+// leads local time (240 for EDT). Without it the container computes "today" in
+// UTC, so after ~8pm Eastern it rolls over early and reports a near-empty day.
+// The viewer's clock is the only correct authority here, so the dashboard
+// sends it and the server never guesses.
+async function readClaudeCodeUsage(tzOffsetMin = 0) {
+  if (!USAGE_DIR) {
+    throw new Error("CLAUDE_PROJECTS_DIR is not set, so there are no local transcripts to read.");
+  }
+  const files = await listTranscripts(USAGE_DIR);
+  if (!files.length) {
+    throw new Error(`No .jsonl transcripts found under ${USAGE_DIR}. Check the mount path.`);
+  }
+
+  const stats = await Promise.all(files.map(async f => {
+    try { const s = await fsp.stat(f); return `${f}:${s.size}:${s.mtimeMs}`; } catch { return f; }
+  }));
+  // Buckets depend on the offset, so it belongs in the cache key.
+  const key = `${tzOffsetMin}|${stats.join("|")}`;
+  if (usageCache.key === key && Date.now() - usageCache.at < 300000) return usageCache.data;
+
+  const day = 86400000;
+  const offsetMs = tzOffsetMin * 60000;
+  // Shift into the viewer's local frame, floor to midnight, shift back.
+  const startOfToday = Math.floor((Date.now() - offsetMs) / day) * day + offsetMs;
+  const periods = {
+    today: startOfToday,
+    week:  startOfToday - 6 * day,
+    month: startOfToday - 29 * day,
+    all:   0
+  };
+
+  const totals = {};
+  const byModel = {};
+  for (const p of Object.keys(periods)) { totals[p] = emptyBucket(); byModel[p] = {}; }
+  const sessions = new Set();
+  let firstSeen = Infinity, lastSeen = 0, skipped = 0;
+
+  for (const file of files) {
+    let text;
+    try { text = await fsp.readFile(file, "utf8"); } catch { continue; }
+    for (const line of text.split("\n")) {
+      // Cheap pre-filter: most lines are user turns with no usage at all.
+      if (line.length < 40 || line.indexOf('"usage"') === -1) continue;
+      let o;
+      try { o = JSON.parse(line); } catch { skipped++; continue; }
+      const u = o && o.message && o.message.usage;
+      if (!u || typeof u !== "object") continue;
+      const ts = o.timestamp ? Date.parse(o.timestamp) : NaN;
+      if (!Number.isFinite(ts)) continue;
+      const model = String((o.message && o.message.model) || "unknown");
+      // Synthetic entries carry no real spend and would skew model counts.
+      if (model === "<synthetic>") continue;
+
+      if (ts < firstSeen) firstSeen = ts;
+      if (ts > lastSeen) lastSeen = ts;
+      if (o.sessionId) sessions.add(String(o.sessionId));
+
+      for (const [name, from] of Object.entries(periods)) {
+        if (ts < from) continue;
+        addUsage(totals[name], u, model);
+        if (!byModel[name][model]) byModel[name][model] = emptyBucket();
+        addUsage(byModel[name][model], u, model);
+      }
+    }
+  }
+
+  const models = [...new Set(Object.values(byModel).flatMap(m => Object.keys(m)))].sort();
+  const data = {
+    generatedAt: new Date().toISOString(),
+    tzOffsetMin,
+    dayStartedAt: new Date(startOfToday).toISOString(),
+    transcripts: files.length,
+    // Older transcripts predate the sessionId field; one file is one session,
+    // so fall back to the file count rather than reporting a bogus 0 or 1.
+    sessions: Math.max(sessions.size, files.length),
+    unparsableLines: skipped,
+    firstActivity: Number.isFinite(firstSeen) ? new Date(firstSeen).toISOString() : null,
+    lastActivity: lastSeen ? new Date(lastSeen).toISOString() : null,
+    models,
+    totals,
+    byModel
+  };
+  usageCache = { key, at: Date.now(), data };
+  return data;
+}
+
+const USAGE_SOURCES = {
+  "claude-code": { needs: "CLAUDE_PROJECTS_DIR", run: readClaudeCodeUsage }
+};
+
 async function handleProxy(req, res, cors, segments, url) {
   const name = segments[1];
   const provider = PROXY_PROVIDERS[name];
@@ -611,12 +781,14 @@ const server = http.createServer(async (req, res) => {
       oauth: Object.keys(OAUTH_PROVIDERS).filter(k => OAUTH_PROVIDERS[k].clientId()),
       // Only checks whose targets are actually configured are reported ready.
       security: Object.keys(SECURITY_CHECKS).filter(k => csv(env[SECURITY_CHECKS[k].needs]).length),
+      usage: Object.keys(USAGE_SOURCES).filter(k => (env[USAGE_SOURCES[k].needs] || "").trim()),
       staticHosting: !!STATIC_DIR,
       authRequired: !!DASHBOARD_TOKEN
     }, cors);
   }
 
-  const isApi = segments[0] === "proxy" || segments[0] === "token" || segments[0] === "security";
+  const isApi = segments[0] === "proxy" || segments[0] === "token" ||
+                segments[0] === "security" || segments[0] === "usage";
   if (isApi) {
     if (origin && !corsHeaders(origin)) {
       return send(res, 403, { error: `Origin "${origin}" is not in ALLOWED_ORIGINS.` });
@@ -647,6 +819,22 @@ const server = http.createServer(async (req, res) => {
       const started = Date.now();
       const result = await check.run();
       return send(res, 200, { check: name, tookMs: Date.now() - started, ...result }, cors);
+    }
+    if (segments[0] === "usage") {
+      const name = segments[1];
+      const source = USAGE_SOURCES[name];
+      if (!source) {
+        return send(res, 404, {
+          error: `Unknown usage source "${name}".`,
+          available: Object.keys(USAGE_SOURCES)
+        }, cors);
+      }
+      // Clamped to the real-world range so a bad value can't shift buckets wildly.
+      const rawTz = Number(url.searchParams.get("tzOffsetMin"));
+      const tz = Number.isFinite(rawTz) ? Math.max(-840, Math.min(840, Math.trunc(rawTz))) : 0;
+      const started = Date.now();
+      const result = await source.run(tz);
+      return send(res, 200, { source: name, tookMs: Date.now() - started, ...result }, cors);
     }
     return await handleStatic(req, res, url);
   } catch (e) {

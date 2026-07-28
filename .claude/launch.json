@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cacheboard",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "compose",
+        "-f",
+        "server/docker-compose.yml",
+        "up",
+        "--build"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "cacheboard-attach",
+      "url": "http://localhost:8787"
+    }
+  ]
+}

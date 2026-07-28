@@ -4,6 +4,28 @@
 > audits, 2026-07-27) covering bugs found, security hardening, and the Home Assistant
 > control-surface direction. **All eight milestones are complete.**
 
+**LLM usage — your subscription, not your API bill.** Claude Code writes a JSONL
+transcript per session containing per-message token counts and the model name, so real
+per-model usage is already on disk and costs nothing to read. Point
+`CLAUDE_PROJECTS_HOST_DIR` at `~/.claude/projects` and each card picks a **metric**
+(output / input / cache reads / cache writes / all tokens / messages / equivalent API
+cost), a **period** (today / 7d / 30d / all), and a **model** (all, or Fable / Opus /
+Sonnet / Haiku individually).
+
+> ⚠️ **There is no API for your 5-hour or weekly caps.** Claude Code publishes usage over
+> OpenTelemetry only, and the limits themselves aren't published anywhere machine-readable.
+> These cards show consumption against a target *you* set — not a percentage of an unknown
+> limit. Nothing can show the real "% of weekly limit" number.
+
+Two more honest limits: this covers **Claude Code only** (claude.ai web and mobile chat
+usage isn't in these files, though Pro/Max pools them), and **"equivalent API cost" is what
+those tokens would have cost at API rates** — useful for judging what your plan is worth,
+not a bill you will receive.
+
+The transcript mount is **read-only**, and the parser reads exactly three things per line:
+timestamp, model name, and the numeric token counters. Message content is never read into a
+variable and the endpoint returns integers only.
+
 **Security self-assessment** of your own network runs through the backend: open-port drift
 against a saved baseline (with risky services like unauthenticated Ollama or Moonraker
 called out by name), days until your soonest certificate expires, and missing HTTP security

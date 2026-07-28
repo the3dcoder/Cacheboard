@@ -26,6 +26,11 @@ services:
       - ../README.md:/dashboard/README.md:ro
       - ../NOTES.md:/dashboard/NOTES.md:ro
       - ../ROADMAP.md:/dashboard/ROADMAP.md:ro
+      # Local Claude Code transcripts, for the LLM-usage cards.
+      # READ-ONLY on purpose: the server only ever parses timestamps, model
+      # names and token counters out of these, and never returns message
+      # content. Comment this out if you don't want the container to see them.
+      - ${CLAUDE_PROJECTS_HOST_DIR:-./.no-transcripts}:/transcripts:ro
       # Rotated OAuth refresh tokens survive restarts here.
       - cacheboard-state:/data
 
