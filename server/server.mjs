@@ -650,7 +650,32 @@ async function readClaudeCodeUsage(tzOffsetMin = 0) {
 const CLAUDE_CREDENTIALS_FILE = env.CLAUDE_CREDENTIALS_FILE || "";
 const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.220";
 const PLAN_MIN_INTERVAL_MS = 180000;
-let planCache = { at: 0, data: null };
+
+// Multiple Claude accounts.
+//
+// `claude setup-token` mints a long-lived token per account; put one per
+// identity in .env as CLAUDE_TOKEN_<NAME>. The dashboard sends only the NAME
+// — never a token — so a card can't be edited into exfiltrating a credential,
+// and an unknown name is refused rather than silently falling back.
+//
+//   CLAUDE_TOKEN_PERSONAL=sk-ant-oat01-...
+//   CLAUDE_TOKEN_WORK=sk-ant-oat01-...
+function claudeTokenAccounts() {
+  return Object.keys(env)
+    .filter(k => /^CLAUDE_TOKEN_.+/.test(k) && String(env[k] || "").trim())
+    .map(k => k.slice("CLAUDE_TOKEN_".length).toLowerCase())
+    .sort();
+}
+
+function claudeTokenFor(account) {
+  const key = "CLAUDE_TOKEN_" + String(account).toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  const val = String(env[key] || "").trim();
+  return val || null;
+}
+
+// One cache slot per account — a 180s floor shared across accounts would
+// starve every account but the first.
+const planCaches = new Map();
 
 // The credentials file shape is not contractual, so walk it for a plausible
 // access token rather than hard-coding a path into it. Scored rather than
@@ -705,33 +730,61 @@ const PLAN_LABELS = {
   seven_day_fable: "Weekly · Fable"
 };
 
-async function readClaudePlanUsage() {
-  if (!CLAUDE_CREDENTIALS_FILE) {
-    throw new Error("CLAUDE_CREDENTIALS_FILE is not set, so there is no OAuth token to read.");
-  }
-  if (planCache.data && Date.now() - planCache.at < PLAN_MIN_INTERVAL_MS) {
-    return { ...planCache.data, cached: true, cacheAgeMs: Date.now() - planCache.at };
+async function readClaudePlanUsage(account = "") {
+  const named = String(account || "").trim().toLowerCase();
+  const cacheKey = named || "__default";
+  const cached = planCaches.get(cacheKey);
+  if (cached && Date.now() - cached.at < PLAN_MIN_INTERVAL_MS) {
+    return { ...cached.data, cached: true, cacheAgeMs: Date.now() - cached.at };
   }
 
-  let token, parsed;
-  try {
-    parsed = JSON.parse(await fsp.readFile(CLAUDE_CREDENTIALS_FILE, "utf8"));
-    token = findAccessToken(parsed);
-  } catch (e) {
-    throw new Error(`Could not read ${CLAUDE_CREDENTIALS_FILE}: ${e.message}`);
+  let token = null;
+
+  // A named account resolves ONLY to a token configured on this server.
+  if (named) {
+    token = claudeTokenFor(named);
+    if (!token) {
+      const known = claudeTokenAccounts();
+      throw new Error(
+        `No token configured for account "${named}". ` +
+        (known.length ? `Known accounts: ${known.join(", ")}.` : "No CLAUDE_TOKEN_* entries are set in the server's .env.") +
+        " Run `claude setup-token` for that account and add it as CLAUDE_TOKEN_" +
+        named.toUpperCase().replace(/[^A-Z0-9_]/g, "_") + "."
+      );
+    }
   }
+
+  // Unnamed falls back to the signed-in CLI's credential file, which is the
+  // single-account case.
   if (!token) {
-    // Report candidate PATHS and scores — never values — so a format change
-    // is diagnosable instead of just "didn't work".
-    const cands = collectTokenCandidates(parsed)
-      .sort((a, b) => b.score - a.score).slice(0, 8)
-      .map(c => `${c.path}(${c.score})`);
-    throw new Error(
-      "No Claude subscription OAuth token found. Candidates scored: " +
-      (cands.length ? cands.join(", ") : "(none)") +
-      ". Note this file may hold only MCP plugin tokens — the subscription " +
-      "token can live in the OS keychain instead, which this server cannot read."
-    );
+    if (!CLAUDE_CREDENTIALS_FILE) {
+      const known = claudeTokenAccounts();
+      throw new Error(
+        known.length
+          ? `This card has no account selected. Configured accounts: ${known.join(", ")}.`
+          : "No Claude token available. Either set CLAUDE_TOKEN_<NAME> entries in .env, or sign in with `claude auth login`."
+      );
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(await fsp.readFile(CLAUDE_CREDENTIALS_FILE, "utf8"));
+      token = findAccessToken(parsed);
+    } catch (e) {
+      throw new Error(`Could not read ${CLAUDE_CREDENTIALS_FILE}: ${e.message}`);
+    }
+    if (!token) {
+      // Report candidate PATHS and scores — never values — so a format change
+      // is diagnosable instead of just "didn't work".
+      const cands = collectTokenCandidates(parsed)
+        .sort((a, b) => b.score - a.score).slice(0, 8)
+        .map(c => `${c.path}(${c.score})`);
+      throw new Error(
+        "No Claude subscription OAuth token found. Candidates scored: " +
+        (cands.length ? cands.join(", ") : "(none)") +
+        ". This file may hold only MCP plugin tokens. Easiest fix: run " +
+        "`claude setup-token` and add the result to .env as CLAUDE_TOKEN_<NAME>."
+      );
+    }
   }
 
   const res = await httpsRequest("https://api.anthropic.com/api/oauth/usage", {
@@ -788,14 +841,14 @@ async function readClaudePlanUsage() {
     utilization: Number.isFinite(Number(raw.extra_usage.utilization)) ? Number(raw.extra_usage.utilization) : null
   } : null;
 
-  const data = { generatedAt: new Date().toISOString(), series, extra, cached: false, cacheAgeMs: 0 };
-  planCache = { at: Date.now(), data };
+  const data = { generatedAt: new Date().toISOString(), account: named || null, series, extra, cached: false, cacheAgeMs: 0 };
+  planCaches.set(cacheKey, { at: Date.now(), data });
   return data;
 }
 
 const USAGE_SOURCES = {
   "claude-code": { needs: "CLAUDE_PROJECTS_DIR", run: readClaudeCodeUsage },
-  "claude-plan": { needs: "CLAUDE_CREDENTIALS_FILE", run: readClaudePlanUsage }
+  "claude-plan": { needs: "CLAUDE_CREDENTIALS_FILE", ready: () => claudeTokenAccounts().length > 0 || !!CLAUDE_CREDENTIALS_FILE, run: readClaudePlanUsage }
 };
 
 async function handleProxy(req, res, cors, segments, url) {
@@ -948,7 +1001,11 @@ const server = http.createServer(async (req, res) => {
       oauth: Object.keys(OAUTH_PROVIDERS).filter(k => OAUTH_PROVIDERS[k].clientId()),
       // Only checks whose targets are actually configured are reported ready.
       security: Object.keys(SECURITY_CHECKS).filter(k => csv(env[SECURITY_CHECKS[k].needs]).length),
-      usage: Object.keys(USAGE_SOURCES).filter(k => (env[USAGE_SOURCES[k].needs] || "").trim()),
+      usage: Object.keys(USAGE_SOURCES).filter(k => {
+        const s = USAGE_SOURCES[k];
+        return s.ready ? s.ready() : (env[s.needs] || "").trim();
+      }),
+      claudeAccounts: claudeTokenAccounts(),
       staticHosting: !!STATIC_DIR,
       authRequired: !!DASHBOARD_TOKEN
     }, cors);
@@ -1000,7 +1057,8 @@ const server = http.createServer(async (req, res) => {
       const rawTz = Number(url.searchParams.get("tzOffsetMin"));
       const tz = Number.isFinite(rawTz) ? Math.max(-840, Math.min(840, Math.trunc(rawTz))) : 0;
       const started = Date.now();
-      const result = await source.run(tz);
+      const account = (url.searchParams.get("account") || "").slice(0, 64);
+      const result = await source.run(name === "claude-plan" ? account : tz);
       return send(res, 200, { source: name, tookMs: Date.now() - started, ...result }, cors);
     }
     return await handleStatic(req, res, url);

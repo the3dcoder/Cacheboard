@@ -358,6 +358,9 @@
             <option value="usage">Show % consumed (% used)</option>
           </select>
         </label>
+        <label class="block text-sm mb-3">Account / owner
+          <input type="text" id="b_owner" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="unchanged" maxlength="60">
+        </label>
         <label class="block text-sm mb-4">Unit label
           <input type="text" id="b_unit" class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="unchanged">
         </label>
@@ -390,6 +393,14 @@
       <label class="block col-span-2">
         <span class="text-xs" style="color:var(--text-muted)">Account name</span>
         <input type="text" id="f_name" required class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="e.g. Personal, Work Team">
+      </label>
+
+      <label class="block col-span-2">
+        <span class="text-xs" style="color:var(--text-muted)">Account / owner (optional)</span>
+        <input type="text" id="f_owner" list="ownerSuggestions" maxlength="60" autocomplete="off"
+               class="w-full rounded-lg px-3 py-2 mt-1 text-sm" placeholder="e.g. personal@gmail.com">
+        <datalist id="ownerSuggestions"></datalist>
+        <span class="text-xs" style="color:var(--text-muted)">Groups cards by identity so several Gmail accounts stay untangled. Becomes a filter in the bar above.</span>
       </label>
 
       <label class="block">
@@ -947,6 +958,13 @@
         {
           value: "plan", label: "Plan limits (session + weekly, all windows)", fetch: fetchClaudePlanUsage,
           direction: "usage",
+          fields: [
+            // Only a NAME travels from the browser. The token itself lives in
+            // the server's .env as CLAUDE_TOKEN_<NAME>, so a card can't be
+            // edited into carrying or leaking a credential.
+            { key: "claudeAccount", label: "Claude account", type: "text", full: true,
+              placeholder: "personal  →  matches CLAUDE_TOKEN_PERSONAL in server .env" }
+          ],
           help: "One card, one meter per limit window — session, weekly all-models, and each per-model weekly cap — mirroring Claude Code's /usage. Needs the plan-usage seam filled in on the backend (server/README → \"Plan usage seam\"); until then it reports that plainly instead of showing a blank card."
         },
         {
@@ -1300,6 +1318,11 @@
     acc.resetTime = Number.isFinite(resetMs)
       ? new Date(resetMs).toISOString()
       : new Date(Date.now() + acc.resetIntervalMs).toISOString();
+
+    // Which identity this card belongs to — an email, a nickname, anything.
+    // Purely organisational: it never affects fetching, only grouping and
+    // filtering, so mislabelling a card can't break it.
+    acc.owner = typeof acc.owner === "string" ? acc.owner.trim().slice(0, 60) : "";
 
     // Per-account direction override. Empty string means "inherit the
     // account type's default" — anything unrecognized falls back to that.
@@ -1868,7 +1891,13 @@
   // "Plan usage seam"). Until then this reports the gap honestly rather
   // than showing a blank or invented card.
   async function fetchClaudePlanUsage(acc) {
-    const res = await backendRequest("/usage/claude-plan");
+    // Name only — never a token. An unconfigured name is refused server-side
+    // rather than silently falling back to whichever account happens to be
+    // signed in, which would quietly show you the wrong numbers.
+    const account = (acc.claudeAccount || "").trim();
+    const res = await backendRequest(
+      "/usage/claude-plan" + (account ? `?account=${encodeURIComponent(account)}` : "")
+    );
     const data = await res.json().catch(() => null);
     if (!data) throw new Error("Backend returned an unreadable plan-usage result.");
     if (data.error) throw new Error(data.error);
@@ -2934,7 +2963,16 @@
     const bar = document.getElementById("filterBar");
     const counts = { all: accounts.length };
     Object.keys(PLATFORMS).forEach(p => { counts[p] = accounts.filter(a => a.platform === p).length; });
-    const pills = [["all", "All"], ...Object.entries(PLATFORMS).map(([k, v]) => [k, v.label])];
+    // Owner pills come first after "All": when you keep several identities
+    // on one dashboard, "whose is this" is a more useful first cut than
+    // "what platform is this".
+    const owners = [...new Set(accounts.map(a => a.owner).filter(Boolean))].sort();
+    owners.forEach(o => { counts["owner:" + o] = accounts.filter(a => a.owner === o).length; });
+    const pills = [
+      ["all", "All"],
+      ...owners.map(o => ["owner:" + o, o]),
+      ...Object.entries(PLATFORMS).map(([k, v]) => [k, v.label])
+    ];
     // No inline colour here on purpose: inline styles beat the
     // .filter-pill[data-active] rule, which left the selected pill with
     // only a 1.22:1 background shift and no visible selection at all.
@@ -3142,7 +3180,7 @@
           </span>`}
           <div class="min-w-0">
             <h3 class="text-sm font-medium truncate" id="${cardTitleId}" title="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</h3>
-            <div class="text-xs truncate" style="color:var(--text-muted)">${meta.label} &middot; ${typeMeta ? typeMeta.label : escapeHtml(acc.accountType)}</div>
+            <div class="text-xs truncate" style="color:var(--text-muted)">${meta.label} &middot; ${typeMeta ? typeMeta.label : escapeHtml(acc.accountType)}${acc.owner ? " &middot; " + escapeHtml(acc.owner) : ""}</div>
           </div>
         </div>
         <span class="text-xs font-medium px-2 py-1 rounded-full shrink-0 flex items-center gap-1" data-badge
@@ -3369,6 +3407,7 @@
     if (key === "__attention") return "cards needing attention";
     if (key === "__stale") return "stale";
     if (key === "__errors") return "errored";
+    if (key.startsWith("owner:")) return key.slice(6);
     return (PLATFORMS[key] || {}).label || key;
   }
 
@@ -3376,7 +3415,10 @@
     const predicate = ATTENTION_FILTERS[activeFilter];
     const list = activeFilter === "all"
       ? accounts.slice()
-      : (predicate ? accounts.filter(predicate) : accounts.filter(a => a.platform === activeFilter));
+      : predicate ? accounts.filter(predicate)
+      : activeFilter.startsWith("owner:")
+        ? accounts.filter(a => a.owner === activeFilter.slice(6))
+        : accounts.filter(a => a.platform === activeFilter);
     return sortForDisplay(list);
   }
 
@@ -3689,6 +3731,12 @@
     document.getElementById("deleteAccountBtn").classList.toggle("hidden", !acc);
     document.getElementById("f_id").value = acc ? acc.id : "";
     document.getElementById("f_name").value = acc ? acc.name : "";
+    document.getElementById("f_owner").value = acc ? (acc.owner || "") : "";
+    // Suggest identities already in use so they stay spelled consistently —
+    // "work@gmail" and "Work@Gmail" would otherwise become two filters.
+    document.getElementById("ownerSuggestions").innerHTML =
+      [...new Set(accounts.map(a => a.owner).filter(Boolean))].sort()
+        .map(o => `<option value="${escapeHtml(o)}"></option>`).join("");
 
     const platform = acc ? acc.platform : "chatgpt";
     document.getElementById("f_platform").value = platform;
@@ -3834,6 +3882,7 @@
     const account = {
       id,
       name: document.getElementById("f_name").value.trim() || "Untitled account",
+      owner: document.getElementById("f_owner").value.trim().slice(0, 60),
       platform, accountType, totalLimit, used,
       unit: document.getElementById("f_unit").value.trim() || "units",
       direction: document.getElementById("f_direction").value,
@@ -4120,7 +4169,7 @@
     document.getElementById("bulkEditBtn").addEventListener("click", () => {
       if (!selectedIds.size) return;
       document.getElementById("bulkEditCount").textContent = String(selectedIds.size);
-      ["b_totalLimit", "b_cycleHours", "b_unit"].forEach(id => { document.getElementById(id).value = ""; });
+      ["b_totalLimit", "b_cycleHours", "b_unit", "b_owner"].forEach(id => { document.getElementById(id).value = ""; });
       document.getElementById("b_direction").value = "";
       document.getElementById("bulkEditError").classList.add("hidden");
       bulkOverlay.classList.remove("hidden");
@@ -4138,7 +4187,8 @@
         totalLimit: document.getElementById("b_totalLimit").value.trim(),
         cycleHours: document.getElementById("b_cycleHours").value.trim(),
         direction:  document.getElementById("b_direction").value,
-        unit:       document.getElementById("b_unit").value.trim()
+        unit:       document.getElementById("b_unit").value.trim(),
+        owner:      document.getElementById("b_owner").value.trim()
       };
 
       const patch = {};
@@ -4165,6 +4215,9 @@
       }
       if (raw.direction) patch.direction = raw.direction;
       if (raw.unit !== "") patch.unit = raw.unit;
+      // "-" is the escape hatch for clearing an owner in bulk, since blank
+      // already means "leave unchanged".
+      if (raw.owner !== "") patch.owner = raw.owner === "-" ? "" : raw.owner.slice(0, 60);
 
       if (!Object.keys(patch).length) {
         err.textContent = "Nothing to change — fill in at least one field.";
