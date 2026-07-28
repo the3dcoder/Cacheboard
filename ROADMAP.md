@@ -268,7 +268,7 @@ What's technically established already:
   but depends on M4.1's render fix landing first
 - Frigate cameras can embed via MJPEG/snapshot endpoints; richer streams (WebRTC via
   go2rtc) are heavier
-- **Serving the dashboard from HA itself** (`/config/www/` → `/local/earl/index.html`)
+- **Serving the dashboard from HA itself** (`/config/www/` → `/local/cacheboard/index.html`)
   would give it a permanent same-network origin — removes the `file://` vs `npx serve`
   split for good, and every LAN device + OAuth redirect gets one stable URL
 

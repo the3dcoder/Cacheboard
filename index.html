@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Limit Tracker Dashboard</title>
+<title>Cacheboard</title>
 <!-- Tailwind, vendored.
      This replaces the Tailwind Play CDN script tag. That script executed
      third-party JS on every load of a page holding API keys and OAuth
@@ -249,7 +249,7 @@
 <header class="sticky top-0 z-20 border-b" style="background:rgba(13,13,13,0.9); backdrop-filter: blur(6px); border-color: var(--border);">
   <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h1 class="text-lg font-semibold" style="color:var(--text-primary)">Limit Tracker Dashboard</h1>
+      <h1 class="text-lg font-semibold" style="color:var(--text-primary)">Cacheboard</h1>
       <p class="text-xs" style="color:var(--text-muted)" id="headerSubtitle"></p>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
@@ -870,9 +870,13 @@
     unknown:   { label: "No data",        color: "var(--text-muted)",     bg: "rgba(255,255,255,0.06)" }
   };
 
-  // The storage KEY is deliberately frozen at .v1 forever — changing it
-  // would orphan every saved credential. Schema changes are versioned
-  // inside the payload instead and migrated on load.
+  // The storage KEYS are deliberately frozen — changing one orphans every
+  // saved account and credential in existing browsers. Schema changes are
+  // versioned inside the payload instead and migrated on load.
+  //
+  // That's also why they still read "limitDashboard" after the project was
+  // renamed to Cacheboard: a cosmetic rename is not worth silently wiping
+  // anyone's saved API keys.
   const STORAGE_ACCOUNTS = "limitDashboard.accounts.v1";
   const STORAGE_LIVE_SIM = "limitDashboard.liveSim.v1";
   const STORAGE_SETTINGS = "limitDashboard.settings.v1";

@@ -1,4 +1,4 @@
-# Limit Tracker Dashboard
+# Cacheboard
 
 A single-file, dark-mode dashboard for everything in my life that fluctuates daily —
 AI service quotas, cloud spend, home lab telemetry, investments, social metrics, and health.

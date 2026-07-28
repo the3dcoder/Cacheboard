@@ -1,4 +1,4 @@
-# Limit Tracker Dashboard — Status & Outstanding Work
+# Cacheboard — Status & Outstanding Work
 
 > **See also [ROADMAP.md](ROADMAP.md)** — post-audit milestone plan (3 principal-level
 > audits, 2026-07-27) covering bugs found, security hardening, and the Home Assistant
@@ -54,7 +54,7 @@ is never stored.
 Single-file dashboard (`index.html`) tracking usage/limits across AI services, cloud,
 finance, home lab, social, and health. No backend, no build step, nothing to install.
 
-**Last updated:** 2026-07-27 · **25 accounts across 11 platforms**
+**Last updated:** 2026-07-27 · **31 example cards across 12 platforms**
 
 ---
 
@@ -68,7 +68,7 @@ Three ways to get one, best first:
 
 | How | Command / step | Notes |
 |---|---|---|
-| **From Home Assistant** | copy `index.html` → `/config/www/earl/index.html` | Reach it at `http://homeassistant.local:8123/local/earl/index.html`. Same-origin with HA, so **no CORS config needed**, and one permanent LAN URL. |
+| **From Home Assistant** | copy `index.html` → `/config/www/cacheboard/index.html` | Reach it at `http://homeassistant.local:8123/local/cacheboard/index.html`. Same-origin with HA, so **no CORS config needed**, and one permanent LAN URL. |
 | **From the backend container** | `cd server && docker compose up -d` | Serves the dashboard *and* the API on `http://localhost:8787`. Needs only Docker. |
 | **Any static server** | e.g. `npx serve .` | ⚠️ Requires Node, which **is not installed on this machine** — `node`, `npm`, `npx` and Python are all absent. Use one of the options above unless you install it. |
 
@@ -104,10 +104,11 @@ console, and keep the port stable or you'll be re-registering constantly.
 
 ### 📝 Manual by design (no API exists)
 
-- **ChatGPT / OpenAI** — OpenAI serves no CORS headers and states browser calls are
-  unsupported by design. Would require a backend proxy. Both consumer *and* API-key
-  types are manual here.
-- **Consumer subscriptions** (ChatGPT Plus, Claude Pro, Copilot Individual fallback) —
+- **ChatGPT / OpenAI consumer** (Plus/Team) — no public API exposes per-account quota for
+  consumer plans, from any origin. Manual regardless of the backend.
+  *(The API-key card is no longer manual — it works through the backend companion, which
+  holds the key server-side. Needs an org-scoped admin key for the costs endpoint.)*
+- **Consumer subscriptions** (Claude Pro, Copilot Individual fallback) —
   no public API exposes per-account quota for consumer plans.
 - **Financial** (PNC, Amex, Consumers Energy, DTE) — real aggregation requires Plaid or
   similar, which mandates a server-side secret. See [Financial](#financial-plaid).
@@ -215,7 +216,7 @@ http:
 ```
 
 **Or skip CORS entirely** by serving the dashboard from HA itself: copy `index.html` to
-`/config/www/earl/index.html` and open `http://homeassistant.local:8123/local/earl/index.html`.
+`/config/www/cacheboard/index.html` and open `http://homeassistant.local:8123/local/cacheboard/index.html`.
 It's then same-origin, so no CORS config is needed at all — and you get one permanent URL
 that every device on the LAN can reach and that OAuth providers can redirect back to.
 

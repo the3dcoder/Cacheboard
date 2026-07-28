@@ -1,4 +1,4 @@
-// Limit Tracker Dashboard — optional backend companion.
+// Cacheboard — optional backend companion.
 //
 // The dashboard works entirely without this. Everything here exists to do
 // the three things a browser genuinely cannot:

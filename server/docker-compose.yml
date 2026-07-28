@@ -11,7 +11,7 @@
 services:
   dashboard:
     build: .
-    container_name: earl-dashboard
+    container_name: cacheboard
     restart: unless-stopped
     ports:
       - "8787:8787"
@@ -27,7 +27,7 @@ services:
       - ../NOTES.md:/dashboard/NOTES.md:ro
       - ../ROADMAP.md:/dashboard/ROADMAP.md:ro
       # Rotated OAuth refresh tokens survive restarts here.
-      - earl-state:/data
+      - cacheboard-state:/data
 
 volumes:
-  earl-state:
+  cacheboard-state:
