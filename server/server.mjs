@@ -627,8 +627,175 @@ async function readClaudeCodeUsage(tzOffsetMin = 0) {
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Subscription plan limits — the windows Claude Code's /usage shows.
+//
+// The local transcripts can tell you what you consumed, but not how much of
+// your 5-hour and weekly caps that represents. The documented Usage & Cost
+// Admin API doesn't cover it (API-key spend only, and unavailable to
+// individual accounts). Claude Code reads it from an OAuth endpoint, using
+// the token already on this machine, and so does this.
+//
+// UNDOCUMENTED. Anthropic can change or withdraw it without notice. When that
+// happens the card reports the failure rather than showing a stale number.
+//
+// Two constraints, both enforced here rather than trusted to callers:
+//   1. The User-Agent must identify as claude-code/<version>. Without it the
+//      endpoint returns 429 immediately and keeps doing so for that token.
+//   2. One call per 180s per token. Polling faster gets the token throttled,
+//      which would break Claude Code itself.
+//
+// The token is read at request time, used for exactly one outbound call, and
+// never logged, cached, or returned. Only integers reach the browser.
+const CLAUDE_CREDENTIALS_FILE = env.CLAUDE_CREDENTIALS_FILE || "";
+const CLAUDE_CODE_UA = env.CLAUDE_CODE_USER_AGENT || "claude-code/2.1.219";
+const PLAN_MIN_INTERVAL_MS = 180000;
+let planCache = { at: 0, data: null };
+
+// The credentials file shape is not contractual, so walk it for a plausible
+// access token rather than hard-coding a path into it. Scored rather than
+// first-match: a file can hold a refresh token, an id token and an access
+// token side by side, and picking the wrong one fails confusingly later.
+function collectTokenCandidates(node, path = "", depth = 0, out = []) {
+  if (!node || typeof node !== "object" || depth > 8) return out;
+  for (const [k, v] of Object.entries(node)) {
+    const here = path ? `${path}.${k}` : k;
+    if (typeof v === "string" && v.length >= 20) {
+      let score = 0;
+      if (/access_?token/i.test(k)) score += 100;
+      else if (/^token$/i.test(k)) score += 60;
+      else if (/token/i.test(k) && !/refresh|id_?token/i.test(k)) score += 40;
+      // Anthropic OAuth tokens carry a recognisable prefix.
+      if (/^sk-ant-oat/i.test(v)) score += 50;
+      if (/refresh/i.test(k)) score -= 200;
+      // This file also holds MCP plugin OAuth tokens (Linear, Canva, …).
+      // Those authenticate nothing here, and sending one as the bearer would
+      // fail confusingly — score them out rather than risk selecting one.
+      if (/^mcpOAuth\b/i.test(here)) score -= 500;
+      if (score > 0) out.push({ path: here, value: v, score });
+    } else if (v && typeof v === "object") {
+      collectTokenCandidates(v, here, depth + 1, out);
+    }
+  }
+  return out;
+}
+
+function findAccessToken(parsed) {
+  const found = collectTokenCandidates(parsed).sort((a, b) => b.score - a.score);
+  return found.length ? found[0].value : null;
+}
+
+// Key names only — never values. Enough to diagnose a shape change without
+// putting anything sensitive in an error message or a log.
+function describeCredentialShape(node, path = "", depth = 0, out = []) {
+  if (!node || typeof node !== "object" || depth > 3) return out;
+  for (const [k, v] of Object.entries(node)) {
+    const here = path ? `${path}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) describeCredentialShape(v, here, depth + 1, out);
+    else out.push(`${here}:${Array.isArray(v) ? "array" : typeof v}`);
+  }
+  return out;
+}
+
+const PLAN_LABELS = {
+  five_hour: "Current session",
+  seven_day: "Weekly · all models",
+  seven_day_opus: "Weekly · Opus",
+  seven_day_sonnet: "Weekly · Sonnet",
+  seven_day_fable: "Weekly · Fable"
+};
+
+async function readClaudePlanUsage() {
+  if (!CLAUDE_CREDENTIALS_FILE) {
+    throw new Error("CLAUDE_CREDENTIALS_FILE is not set, so there is no OAuth token to read.");
+  }
+  if (planCache.data && Date.now() - planCache.at < PLAN_MIN_INTERVAL_MS) {
+    return { ...planCache.data, cached: true, cacheAgeMs: Date.now() - planCache.at };
+  }
+
+  let token, parsed;
+  try {
+    parsed = JSON.parse(await fsp.readFile(CLAUDE_CREDENTIALS_FILE, "utf8"));
+    token = findAccessToken(parsed);
+  } catch (e) {
+    throw new Error(`Could not read ${CLAUDE_CREDENTIALS_FILE}: ${e.message}`);
+  }
+  if (!token) {
+    // Report candidate PATHS and scores — never values — so a format change
+    // is diagnosable instead of just "didn't work".
+    const cands = collectTokenCandidates(parsed)
+      .sort((a, b) => b.score - a.score).slice(0, 8)
+      .map(c => `${c.path}(${c.score})`);
+    throw new Error(
+      "No Claude subscription OAuth token found. Candidates scored: " +
+      (cands.length ? cands.join(", ") : "(none)") +
+      ". Note this file may hold only MCP plugin tokens — the subscription " +
+      "token can live in the OS keychain instead, which this server cannot read."
+    );
+  }
+
+  const res = await httpsRequest("https://api.anthropic.com/api/oauth/usage", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "anthropic-beta": "oauth-2025-04-20",
+      "User-Agent": CLAUDE_CODE_UA,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    }
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("Claude rejected the stored OAuth token. Open Claude Code to re-authenticate.");
+  }
+  if (res.status === 429) {
+    throw new Error("Rate limited by the usage endpoint (429). One call per 180s per token — check the User-Agent.");
+  }
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`Usage endpoint returned HTTP ${res.status}.`);
+  }
+
+  let raw;
+  try { raw = JSON.parse(res.body.toString("utf8")); }
+  catch { throw new Error("Usage endpoint returned a response that wasn't JSON."); }
+
+  // Pick up ANY {utilization, resets_at} key rather than hard-coding window
+  // names, so a new per-model cap appears with no code change.
+  const series = [];
+  for (const [key, val] of Object.entries(raw)) {
+    if (!val || typeof val !== "object") continue;
+    const util = Number(val.utilization);
+    if (!Number.isFinite(util)) continue;
+    series.push({
+      key,
+      label: PLAN_LABELS[key] ||
+        ("Weekly · " + key.replace(/^seven_day_?/, "").replace(/_/g, " ")).trim(),
+      used: Math.round(util * 10) / 10,
+      totalLimit: 100,
+      unit: "%",
+      resetTime: val.resets_at || null
+    });
+  }
+  if (!series.length) {
+    throw new Error("Usage endpoint returned no recognisable limit windows.");
+  }
+
+  // Session first, then combined weekly, then per-model — matches /usage.
+  const rank = k => (k === "five_hour" ? 0 : k === "seven_day" ? 1 : 2);
+  series.sort((a, b) => rank(a.key) - rank(b.key) || a.key.localeCompare(b.key));
+
+  const extra = raw.extra_usage && typeof raw.extra_usage === "object" ? {
+    enabled: !!raw.extra_usage.is_enabled,
+    utilization: Number.isFinite(Number(raw.extra_usage.utilization)) ? Number(raw.extra_usage.utilization) : null
+  } : null;
+
+  const data = { generatedAt: new Date().toISOString(), series, extra, cached: false, cacheAgeMs: 0 };
+  planCache = { at: Date.now(), data };
+  return data;
+}
+
 const USAGE_SOURCES = {
-  "claude-code": { needs: "CLAUDE_PROJECTS_DIR", run: readClaudeCodeUsage }
+  "claude-code": { needs: "CLAUDE_PROJECTS_DIR", run: readClaudeCodeUsage },
+  "claude-plan": { needs: "CLAUDE_CREDENTIALS_FILE", run: readClaudePlanUsage }
 };
 
 async function handleProxy(req, res, cors, segments, url) {

@@ -31,6 +31,12 @@ services:
       # names and token counters out of these, and never returns message
       # content. Comment this out if you don't want the container to see them.
       - ${CLAUDE_PROJECTS_HOST_DIR:-./.no-transcripts}:/transcripts:ro
+      # Claude OAuth credentials, for the plan-limit card only.
+      # READ-ONLY. The server extracts one access token, uses it for a single
+      # outbound call to Anthropic's usage endpoint, and returns integers —
+      # the token is never logged, cached or sent to the browser.
+      # Comment this out to disable the plan-limit card entirely.
+      - ${CLAUDE_CREDENTIALS_HOST_FILE:-./.no-creds}:/creds/.credentials.json:ro
       # Rotated OAuth refresh tokens survive restarts here.
       - cacheboard-state:/data
 
